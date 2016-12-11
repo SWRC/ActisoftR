@@ -1,5 +1,5 @@
 
-install.packages("dplyr", "ggplot2", "scales", "readr", "lubridate", "dplyr")
+install.packages("dplyr", "ggplot2", "scales", "readr", "lubridate")
 
 library("dplyr")
 library("ggplot2")
