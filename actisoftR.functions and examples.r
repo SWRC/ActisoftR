@@ -10,16 +10,18 @@ library("lubridate")
 # *** Please, save the 'data' folder in your working directory
 
 # Example of setting my working directory
-setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-12") 
-
+# setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-12") 
+setwd("C:\\Users\\lwu1\\Dropbox\\ActisoftR\\")
+## Edgar -- can we use the Dropbox or you share the Google Drive version of folders so we can access the same folders and data file names? Will make it easier to coordinate.
 
 # *** This first part will import the data ***
 
 # Importing Actiware data (for Philips-Respironics actigraphs)
 # Importing all the CSV files simultaneously.  
-files <- list.files( path = "data\\Actiwatch", pattern = "*.csv") # list all the csv files 
-dat <- do.call(rbind, lapply(paste("data\\Actiwatch\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
+files <- list.files( path = ".\\EXAMPLE_DATA\\Actiware", pattern = "*.csv") # list all the csv files 
+dat <- do.call(rbind, lapply(paste(".\\EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 dat <- tbl_df(dat) # table dataframe 
+## can we make this import files that have different variable names (to protect for users' having different options checked on their software) and then just keep the ones we want/merge or merge and have the extra varaibles appended to the end?
 
 # selecting the useful variables. 
 # [remove this comment final version] These are the variables marked in red in the Variable names dictionary ActisoftR file
@@ -29,10 +31,12 @@ dat <- select_(dat, .dots = useful)
 dat <- add_column(dat, actigraph = rep("Actiwatch",nrow(dat)), .before = 1)
 dat$bad <- "NaN" 
 
+## ^ do not set default bad to NaN -- bad is equivalent to the existance of having an EXCLUDED interval overalp with a user requested interval
+
 
 # Importing from AMI actigraphs 
-files2 <- list.files( path = "data\\AMI", pattern = "*.csv") # list all the csv files 
-dat2 <- do.call(rbind, lapply(paste("data\\AMI\\", files2, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
+files2 <- list.files( path = ".\\EXAMPLE_DATA\\AMI", pattern = "*.txt") # list all the csv files 
+dat2 <- do.call(rbind, lapply(paste(".\\EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read.table(x, sep = "\t", header = TRUE, skip = 0)))
 
 dat2 <- tbl_df(dat2) # table dataframe 
 #print(tbl_df(dat2), n = 400)
@@ -47,8 +51,14 @@ dat2 <- add_column(dat2, analysis_name = rep("NaN",nrow(dat2)), .before = 2)
 
 # using the variables names from Actiware
 dat2 <- rename(dat2, subject_id = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
-       end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
+               end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
 
+## note that sleep efficiency from AMI is the pslp where IntType == "Down" ONLY and NOT the pslp where IntType == "O - O"
+
+            
+## I can't get the AMI to merge w the Actiware version of the files -- my AMI has too many variables. Need to see which data you are importing from the folder.
+            
+            
 alldata <- rbind(dat,dat2) # combining both datasets
 alldata$datime_start <- paste( as.POSIXct( strptime( alldata$start_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$start_time)
 alldata$datime_end   <- paste( as.POSIXct( strptime( alldata$end_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$end_time)
@@ -70,7 +80,9 @@ View(alldata2)
 # Importing flight Sleep-Work data type (Not real data)
 # this data is from the excel sheet Example01 example02 Darwent Plot v3-1.xls
 
-flight <- read.csv(file = 'data\\Delta\\Delta.csv', sep = ",", header = TRUE, skip = 0)
+flight <- read.csv(file = 'data\\work\\work.csv', sep = ",", header = TRUE, skip = 0)
+## changing this to be more generic -- please update your filename to be "work"
+
 
 flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
 flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
@@ -87,61 +99,61 @@ flight <- tbl_df(flight) # table dataframe
 
 # Darwent plot (Alternative 1: local plot) 
 plot.Darwent <- function(x, acolor, shade = TRUE, datebreaks = "12 hour", ...){
-    foo <- as.data.frame(x)
-    foo <- mutate(foo, datime_start = as.POSIXct(datime_start,tz = "UTC"), datime_end = as.POSIXct(datime_end,tz = "UTC")) 
-    
-    if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the colors
-    
-    part <- nrow(distinct(x,subject_id)) # number of participants. It defines the height of the plot
-    
-    p <- ggplot() + 
-      geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_id, yend = subject_id),
-                   size = 15) + { # to add the shade periods
-      if(shade == TRUE) geom_rect(data = local.night.shade(x = x), aes(xmin = as.POSIXct(shadow.start, tz = "UTC"),
-                                                     xmax = as.POSIXct(shadow.end, tz = "UTC"), ymin = 0, ymax = Inf), alpha = 0.075, fill = "green") } +
-      theme_bw() +
-      xlab("Date-Time") +
-      ylab("Participant(s)") +
-      theme_classic() +
-      scale_color_manual(values = acolor) +
-      scale_fill_manual(name = "Act")
-    
-    # resizing the plotting area 
-    windows()
-    resize.win <- function(Width = 12, Height = 5){dev.off(); 
-      windows(record = TRUE, width = Width, height = Height)}
-    resize.win(14, 2 * part)
-    
-    p + scale_x_datetime(breaks = date_breaks(datebreaks),  # "12 hour" or "1 day"
-                         minor_breaks = date_breaks(datebreaks),
-                         labels = date_format("%y-%m-%d %H.%M", 
+  foo <- as.data.frame(x)
+  foo <- mutate(foo, datime_start = as.POSIXct(datime_start,tz = "UTC"), datime_end = as.POSIXct(datime_end,tz = "UTC")) 
+  
+  if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the colors
+  
+  part <- nrow(distinct(x,subject_id)) # number of participants. It defines the height of the plot
+  
+  p <- ggplot() + 
+    geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_id, yend = subject_id),
+                 size = 15) + { # to add the shade periods
+                   if(shade == TRUE) geom_rect(data = local.night.shade(x = x), aes(xmin = as.POSIXct(shadow.start, tz = "UTC"),
+                                                                                    xmax = as.POSIXct(shadow.end, tz = "UTC"), ymin = 0, ymax = Inf), alpha = 0.075, fill = "green") } +
+    theme_bw() +
+    xlab("Date-Time") +
+    ylab("Participant(s)") +
+    theme_classic() +
+    scale_color_manual(values = acolor) +
+    scale_fill_manual(name = "Act")
+  
+  # resizing the plotting area 
+  windows()
+  resize.win <- function(Width = 12, Height = 5){dev.off(); 
+    windows(record = TRUE, width = Width, height = Height)}
+  resize.win(14, 2 * part)
+  
+  p + scale_x_datetime(breaks = date_breaks(datebreaks),  # "12 hour" or "1 day"
+                       minor_breaks = date_breaks(datebreaks),
+                       labels = date_format("%y-%m-%d %H.%M", 
                                             tz = "UTC")) +   
-      theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) + 
-      theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
-      theme(plot.title = element_text(color = "black", 
-                                      #face = 'bold', 
-                                      size = 18, 
-                                      hjust = 0.5)) +
-      theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
-      ggtitle("Darwent plot")
+    theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) + 
+    theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
+    theme(plot.title = element_text(color = "black", 
+                                    #face = 'bold', 
+                                    size = 18, 
+                                    hjust = 0.5)) +
+    theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
+    ggtitle("Darwent plot")
 } 
 
 
 # Slice a data.frame 
 portion <- function(x, from , to , all = TRUE, ...){
-    part <- as.matrix (distinct(x, subject_id) ) #participant
-    mat2 <-  NULL
-    
-    if(length(from) != length(to))
+  part <- as.matrix (distinct(x, subject_id) ) #participant
+  mat2 <-  NULL
+  
+  if(length(from) != length(to))
     stop("the variables from and to must have same lenght ")
-    
-    for (i in 1 : length(part)){
-      mat <- filter(x, subject_id == part[[i,1]], datime_start >= from[i], datime_end <= to[i] )
-      mat2 <- rbind(mat2 , mat)
-      mat2 <- na.omit(mat2)
-    }
-   mat2
+  
+  for (i in 1 : length(part)){
+    mat <- filter(x, subject_id == part[[i,1]], datime_start >= from[i], datime_end <= to[i] )
+    mat2 <- rbind(mat2 , mat)
+    mat2 <- na.omit(mat2)
   }
+  mat2
+}
 
 
 
@@ -188,6 +200,3 @@ end.period <- rep("2016-07-20", 4)
 mystudy <- portion(fil, from = start.period,  to = end.period)
 # plotting just period of time  
 plot.Darwent(x = mystudy) 
-
-
-
