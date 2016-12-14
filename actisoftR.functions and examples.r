@@ -7,11 +7,15 @@ library("readr")
 library("tibble")
 library("lubridate")
 library("plyr") # function rbind.fill
+
+## can we use dplyr::rbind_all instead of plyr::rbind.fill?
+## I have had issues with loading plyr after dplyr since loading in this order masks a number of functions I tend to use.
+
 # *** Please, save the 'data' folder in your working directory
 
 # Example of setting my working directory
-setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-14") 
-
+# setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-14") 
+setwd("C:\\Users\\lwu1\\Dropbox\\ActisoftR\\2016-12-14")
 
 # *** This first part will import the data ***
 
@@ -32,11 +36,14 @@ dat <- add_column(dat, actigraph = rep("Actiware",nrow(dat)), .before = 1)
 #dat$bad <- "NaN" 
 ## ^ do not set default bad to NaN -- bad is equivalent to the existance of having an EXCLUDED interval overalp with a user requested interval
 ##* Solved: However, when the dataframes are merged the bad column will have NaNs for this actigraph
+## It should have <NA> and  then we can fill in the bad bits during the reporting if there is an overlap between and EXCLUDED and requested interval.
+
 
 # Importing from AMI actigraphs
 
 files2 <- list.files( path = "EXAMPLE_DATA\\AMI", pattern = "*.csv") # list all the csv files 
 #dat2 <- do.call(rbind, lapply(paste("data\\AMI\\", files2, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
+## Did you change all files to .csv before importing?
 
 # this function allows to add the file name to the dataframe.
 read_csv_filename <- function(filename, sep = ",", header = TRUE, skip = 0){
@@ -61,8 +68,8 @@ dat2 <- add_column(dat2, actigraph = rep("AMI", nrow(dat2)), .before = 1)
 dat2 <- add_column(dat2, analysis_name = rep("NaN",nrow(dat2)), .before = 2)
 
 # using the variables names from Actiware
-dat2 <- rename(dat2, subject_id = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
-       end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
+dat2 <- dplyr::rename(dat2, subject_id = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
+               end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
 
 ## note that sleep efficiency from AMI is the pslp where IntType == "Down" ONLY and NOT the pslp where IntType == "O - O"
 ##* What would be the best option to match "efficiency" and "pslp" in both datasets?
@@ -83,7 +90,7 @@ alldata2 <- alldata %>%
 
 View(alldata2)
 
-
+##############note: need to rename analysis_name to file_name and make the extra column extract same from AMI
 
 
 # Importing flight Sleep-Work data type (Not real data)
