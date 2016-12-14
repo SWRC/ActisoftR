@@ -1,4 +1,3 @@
-
 install.packages("dplyr", "ggplot2", "scales", "readr", "lubridate", "tibble", "plyr")
 
 library("dplyr")
@@ -18,8 +17,8 @@ setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-14")
 
 # Importing Actiware data (for Philips-Respironics actigraphs)
 # Importing all the CSV files simultaneously.  
-files <- list.files( path = "data\\Actiwatch", pattern = "*.csv") # list all the csv files 
-dat <- do.call(rbind, lapply(paste("data\\Actiwatch\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
+files <- list.files( path = "EXAMPLE_DATA\\Actiware", pattern = "*.csv") # list all the csv files 
+dat <- do.call(rbind, lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 dat <- tbl_df(dat) # table dataframe 
 ## can we make this import files that have different variable names (to protect for users' having different options checked on their software) and then just keep the ones we want/merge or merge and have the extra varaibles appended to the end?
 ##* Solved: It imports from different files with different number of columns. In addition, the file_name is attached as a variable.
@@ -29,13 +28,14 @@ dat <- tbl_df(dat) # table dataframe
 useful <- c("analysis_name", "subject_id", "interval_type", "interval_number", "start_date", 
             "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time")
 dat <- select_(dat, .dots = useful)
-dat <- add_column(dat, actigraph = rep("Actiwatch",nrow(dat)), .before = 1)
+dat <- add_column(dat, actigraph = rep("Actiware",nrow(dat)), .before = 1)
 #dat$bad <- "NaN" 
 ## ^ do not set default bad to NaN -- bad is equivalent to the existance of having an EXCLUDED interval overalp with a user requested interval
 ##* Solved: However, when the dataframes are merged the bad column will have NaNs for this actigraph
 
-# Importing from AMI actigraphs 
-files2 <- list.files( path = "data\\AMI", pattern = "*.csv") # list all the csv files 
+# Importing from AMI actigraphs
+
+files2 <- list.files( path = "EXAMPLE_DATA\\AMI", pattern = "*.csv") # list all the csv files 
 #dat2 <- do.call(rbind, lapply(paste("data\\AMI\\", files2, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 
 # this function allows to add the file name to the dataframe.
@@ -46,7 +46,7 @@ read_csv_filename <- function(filename, sep = ",", header = TRUE, skip = 0){
 }
 
 
-dat2 <- do.call(rbind.fill, lapply(paste("data\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)))
+dat2 <- do.call(rbind.fill, lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)))
 
 
 dat2 <- tbl_df(dat2) # table dataframe 
@@ -89,7 +89,7 @@ View(alldata2)
 # Importing flight Sleep-Work data type (Not real data)
 # this data is from the excel sheet Example01 example02 Darwent Plot v3-1.xls
 
-flight <- read.csv(file = 'data\\Work\\work.csv', sep = ",", header = TRUE, skip = 0)
+flight <- read.csv(file = 'EXAMPLE_DATA\\Work\\work.csv', sep = ",", header = TRUE, skip = 0)
 
 flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
 flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
