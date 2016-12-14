@@ -1,16 +1,16 @@
-
-install.packages("dplyr", "ggplot2", "scales", "readr", "lubridate")
+install.packages("dplyr", "ggplot2", "scales", "readr", "lubridate", "tibble")
 
 library("dplyr")
 library("ggplot2")
 library("scales") # used for the x-axis tick values 
 library("readr")
+library("tibble")
 library("lubridate")
 
 # *** Please, save the 'data' folder in your working directory
 
 # Example of setting my working directory
-setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-09") 
+setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-12") 
 
 
 # *** This first part will import the data ***
@@ -19,27 +19,56 @@ setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-09")
 # Importing all the CSV files simultaneously.  
 files <- list.files( path = "data\\Actiwatch", pattern = "*.csv") # list all the csv files 
 dat <- do.call(rbind, lapply(paste("data\\Actiwatch\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
-
 dat <- tbl_df(dat) # table dataframe 
 
-dat <- dat[, 1 : 21] # not sure here why till 21. Not relevant the other variables? 
-dat$datime_start <- paste( as.POSIXct( strptime( dat$start_date, format = "%d/%m/%Y"), tz = "UTC"), dat$start_time)
-dat$datime_end   <- paste( as.POSIXct( strptime( dat$end_date, format = "%d/%m/%Y"), tz = "UTC"), dat$end_time)
+# selecting the useful variables. 
+# [remove this comment final version] These are the variables marked in red in the Variable names dictionary ActisoftR file
+useful <- c("analysis_name", "subject_id", "interval_type", "interval_number", "start_date", 
+            "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time")
+dat <- select_(dat, .dots = useful)
+dat <- add_column(dat, actigraph = rep("Actiwatch",nrow(dat)), .before = 1)
+dat$bad <- "NaN" 
 
-fil <- filter(dat, interval_type == "SLEEP" | interval_type == "REST") # selecting only sleep and rest periods
-fil <- distinct(fil, subject_id, interval_type, interval_number, datime_start, datime_end) # for now using just few columns 
-#print(tbl_df(fil), n = 400)
 
-
-# Importing from AMI 
+# Importing from AMI actigraphs 
 files2 <- list.files( path = "data\\AMI", pattern = "*.csv") # list all the csv files 
 dat2 <- do.call(rbind, lapply(paste("data\\AMI\\", files2, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 
 dat2 <- tbl_df(dat2) # table dataframe 
 #print(tbl_df(dat2), n = 400)
+dat2 <- dat2[!is.na(dat2$IntNum),] # removing row containing NA's (Those giving the mean and the sd)
+
+# [remove this comment final version] Variables marked in red in the Variable names dictionary ActisoftR file
+useful2 <- c("ID",  "IntName", "IntNum", "sdate", "stime", "edate", "etime", "dur", "pslp", "smin", "bad")
+
+dat2 <- select_(dat2, .dots = useful2)
+dat2 <- add_column(dat2, actigraph = rep("AMI", nrow(dat2)), .before = 1)
+dat2 <- add_column(dat2, analysis_name = rep("NaN",nrow(dat2)), .before = 2)
+
+# using the variables names from Actiware
+dat2 <- rename(dat2, subject_id = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
+       end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
+
+alldata <- rbind(dat,dat2) # combining both datasets
+alldata$datime_start <- paste( as.POSIXct( strptime( alldata$start_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$start_time)
+alldata$datime_end   <- paste( as.POSIXct( strptime( alldata$end_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$end_time)
+
+# Standarizing the interval_type
+alldata$interval_type[alldata$interval_type == "Down"] <- as.factor("REST")
+alldata$interval_type[alldata$interval_type == "O - O"] <- as.factor("SLEEP")
+alldata$interval_type[alldata$interval_type == "Up"] <- as.factor("ACTIVE")
+
+alldata2 <- alldata %>%
+  group_by(interval_number, start_date, start_time, duration) %>%
+  filter(all(interval_type != "24-Hr")) # removing intervals = "24-Hr"
+
+View(alldata2)
 
 
-# Importing flight Sleep-Work data type
+
+
+# Importing flight Sleep-Work data type (Not real data)
+# this data is from the excel sheet Example01 example02 Darwent Plot v3-1.xls
 
 flight <- read.csv(file = 'data\\Delta\\Delta.csv', sep = ",", header = TRUE, skip = 0)
 
@@ -52,11 +81,12 @@ colnames(flight) <- c("subject_id", "interval_type", "datime_start", "datime_end
 flight <- tbl_df(flight) # table dataframe 
 
 
+
 ################################################
 # *** This section contains some ActisoftR functions ***
 
 # Darwent plot (Alternative 1: local plot) 
-plot.Darwent <- function(x, acolor, shade = TRUE, ...){
+plot.Darwent <- function(x, acolor, shade = TRUE, datebreaks = "12 hour", ...){
     foo <- as.data.frame(x)
     foo <- mutate(foo, datime_start = as.POSIXct(datime_start,tz = "UTC"), datime_end = as.POSIXct(datime_end,tz = "UTC")) 
     
@@ -82,8 +112,8 @@ plot.Darwent <- function(x, acolor, shade = TRUE, ...){
       windows(record = TRUE, width = Width, height = Height)}
     resize.win(14, 2 * part)
     
-    p + scale_x_datetime(breaks = date_breaks("12 hour"),  # "12 hour" or "1 day"
-                         minor_breaks = date_breaks("12 hour"),
+    p + scale_x_datetime(breaks = date_breaks(datebreaks),  # "12 hour" or "1 day"
+                         minor_breaks = date_breaks(datebreaks),
                          labels = date_format("%y-%m-%d %H.%M", 
                                             tz = "UTC")) +   
       theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) + 
@@ -99,10 +129,13 @@ plot.Darwent <- function(x, acolor, shade = TRUE, ...){
 
 # Slice a data.frame 
 portion <- function(x, from , to , all = TRUE, ...){
-    part <- as.vector (distinct(x, subject_id) ) #participant
+    part <- as.matrix (distinct(x, subject_id) ) #participant
     mat2 <-  NULL
     
-    for (i in 1 : length(from)){
+    if(length(from) != length(to))
+    stop("the variables from and to must have same lenght ")
+    
+    for (i in 1 : length(part)){
       mat <- filter(x, subject_id == part[[i,1]], datime_start >= from[i], datime_end <= to[i] )
       mat2 <- rbind(mat2 , mat)
       mat2 <- na.omit(mat2)
@@ -114,7 +147,7 @@ portion <- function(x, from , to , all = TRUE, ...){
 
 # Local period sleep time
 # used by the Darwent plot
-local.night.shade <- function(x, shadow.start = "10:00:00", shadow.end = "10:00:00", ...){
+local.night.shade <- function(x, shadow.start = "10:00:00", shadow.end = "20:00:00", ...){
   first.last <- c(min(x$datime_start), max(x$datime_end))
   first.last.date <- as.Date(first.last)
   seqdates <- seq.Date(first.last.date[1], first.last.date[2],1)
@@ -127,33 +160,19 @@ local.night.shade <- function(x, shadow.start = "10:00:00", shadow.end = "10:00:
 a <- local.night.shade(x = flight)
 
 
-# Summary of the total amount of sleep in a period
-amount.sleep <- function(x, from , to , ...){
-    aportion <- portion(x, from,  to) # Select a portion of the data.frame 
-    aportion = filter(aportion, interval_type == "SLEEP")
-    aportion$dif <- paste(difftime(aportion$datime_end, aportion$datime_start, units = "hours") ) 
-    aportion <- as.data.frame(aportion)
-    aportion$dif <- as.numeric(aportion$dif)
-  
-    aportion %>% 
-      group_by(subject_id) %>% 
-      summarise(total.amount.sleep = sum(dif))
-}
 
 
 ################################################
 # *** Some examples ***
 
-# Example: selecting a portion of the data.frame  
-start.period <- c("2016-07-10", "2016-07-10")
-end.period <- c("2016-07-20", "2016-07-20")
-mystudy <- portion(fil, from = start.period,  to = end.period)
+fil <- filter(alldata2, interval_type == "SLEEP" | interval_type == "REST") # selecting only sleep and rest periods
+fil <- tbl_df(fil) 
+fil <- select(fil, subject_id, interval_type, interval_number, datime_start, datime_end)
 
-# Example: amount of sleep
-start.period <- c("2016-07-06", "2016-07-06")
-end.period <- c("2016-07-22", "2016-07-22")
-amount.sleep(fil, from = start.period,  to = end.period)
-  
+# Example Respironics study
+# plotting flight study without night period shade
+plot.Darwent(x = fil, shade = FALSE, datebreaks = "1 day") 
+
 # Example: Darwent plot
 # using flight data
 # It will open graphics device
@@ -162,10 +181,11 @@ plot.Darwent(x = flight, acolor = c("#56B4E9", "#990000"))
 # plotting the same without night period shades
 plot.Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = FALSE) 
 
-# Example Respironics study
-# plotting flight study without night period shade
-plot.Darwent(x = fil, shade = FALSE) 
 
+# Example: selecting a portion of the data.frame  
+start.period <- rep("2016-07-10", 4)
+end.period <- rep("2016-07-20", 4)
+mystudy <- portion(fil, from = start.period,  to = end.period)
 # plotting just period of time  
 plot.Darwent(x = mystudy) 
 
