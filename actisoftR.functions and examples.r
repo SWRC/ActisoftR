@@ -33,10 +33,11 @@ useful <- c("analysis_name", "subject_id", "interval_type", "interval_number", "
             "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time")
 dat <- select_(dat, .dots = useful)
 dat <- add_column(dat, actigraph = rep("Actiware",nrow(dat)), .before = 1)
+dat <- dplyr::rename(dat, subject_ID = subject_id)
+dat$bad <- NA
 #dat$bad <- "NaN" 
-## ^ do not set default bad to NaN -- bad is equivalent to the existance of having an EXCLUDED interval overalp with a user requested interval
-##* Solved: However, when the dataframes are merged the bad column will have NaNs for this actigraph
-## It should have <NA> and  then we can fill in the bad bits during the reporting if there is an overlap between and EXCLUDED and requested interval.
+## default bad set to NA -- bad variable is equivalent to having an EXCLUDED interval overalp with a user requested interval
+## if there is an overlap, the bad variable will be filled in with something other than NA and 0 in the report
 
 
 # Importing from AMI actigraphs
@@ -65,14 +66,17 @@ useful2 <- c("ID",  "IntName", "IntNum", "sdate", "stime", "edate", "etime", "du
 
 dat2 <- select_(dat2, .dots = useful2)
 dat2 <- add_column(dat2, actigraph = rep("AMI", nrow(dat2)), .before = 1)
-dat2 <- add_column(dat2, analysis_name = rep("NaN",nrow(dat2)), .before = 2)
+dat2 <- add_column(dat2, subject_ID = rep(NA, nrow(dat2)), .before = 2)
 
 # using the variables names from Actiware
-dat2 <- dplyr::rename(dat2, subject_id = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
+dat2 <- dplyr::rename(dat2, analysis_name = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
                end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
 
-## note that sleep efficiency from AMI is the pslp where IntType == "Down" ONLY and NOT the pslp where IntType == "O - O"
+dat2$subject_ID <- gsub("_.*$", "", dat2$analysis_name)
+dat2$efficiency <- ifelse(dat2$interval_type == "Down", dat2$efficiency, NA)
+## note that AMI sleep efficiency is "pslp" where IntType == "Down" ONLY and NOT "pslp" where IntType == "O - O"
 ##* What would be the best option to match "efficiency" and "pslp" in both datasets?
+## I extracted the one we want to keep here but keep in mind when merging that efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
 
 #alldata <- rbind(dat,dat2) # combining both datasets
 alldata <- rbind.fill(dat,dat2) # combining both datasets
@@ -84,13 +88,12 @@ alldata$interval_type[alldata$interval_type == "Down"] <- as.factor("REST")
 alldata$interval_type[alldata$interval_type == "O - O"] <- as.factor("SLEEP")
 alldata$interval_type[alldata$interval_type == "Up"] <- as.factor("ACTIVE")
 
+
 alldata2 <- alldata %>%
   group_by(interval_number, start_date, start_time, duration) %>%
   filter(all(interval_type != "24-Hr")) # removing intervals = "24-Hr"
 
 View(alldata2)
-
-##############note: need to rename analysis_name to file_name and make the extra column extract same from AMI
 
 
 # Importing flight Sleep-Work data type (Not real data)
@@ -123,7 +126,7 @@ plot.Darwent <- function(x, acolor, shade = TRUE, datebreaks = "12 hour", ...){
   
   p <- ggplot() + 
     geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_id, yend = subject_id),
-                 size = 15) + { # to add the shade periods
+                 size = 8) + { # to add the shade periods
                    if(shade == TRUE) geom_rect(data = local.night.shade(x = x), aes(xmin = as.POSIXct(shadow.start, tz = "UTC"),
                                                                                     xmax = as.POSIXct(shadow.end, tz = "UTC"), ymin = 0, ymax = Inf), alpha = 0.075, fill = "green") } +
     theme_bw() +
@@ -160,7 +163,7 @@ portion <- function(x, from , to , all = TRUE, ...){
   mat2 <-  NULL
   
   if(length(from) != length(to))
-    stop("the variables from and to must have same lenght ")
+    stop("the variables from and to must have same length ")
   
   for (i in 1 : length(part)){
     mat <- filter(x, subject_id == part[[i,1]], datime_start >= from[i], datime_end <= to[i] )
