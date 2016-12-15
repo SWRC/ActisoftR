@@ -6,7 +6,8 @@ library("scales") # used for the x-axis tick values
 library("readr")
 library("tibble")
 library("lubridate")
-library("plyr") # function rbind.fill
+# library("plyr") # function rbind.fill
+library("data.table")
 
 ## can we use dplyr::rbind_all instead of plyr::rbind.fill?
 ## I have had issues with loading plyr after dplyr since loading in this order masks a number of functions I tend to use.
@@ -17,12 +18,20 @@ library("plyr") # function rbind.fill
 # setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-14") 
 setwd("C:\\Users\\lwu1\\Dropbox\\ActisoftR\\2016-12-14")
 
+# this function allows to add the file name to the dataframe.
+read_csv_filename <- function(filename, sep = ",", header = TRUE, skip = 0){
+  mycsv <- read.csv(filename, sep = ",", header = TRUE, skip = 0)
+  mycsv$file_name <- filename 
+  mycsv
+}
+
 # *** This first part will import the data ***
 
 # Importing Actiware data (for Philips-Respironics actigraphs)
 # Importing all the CSV files simultaneously.  
 files <- list.files( path = "EXAMPLE_DATA\\Actiware", pattern = "*.csv") # list all the csv files 
-dat <- do.call(rbind, lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
+dat <- rbindlist(lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)), use.names = TRUE, fill = TRUE )
+#dat <- do.call(rbind, lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 dat <- tbl_df(dat) # table dataframe 
 ## can we make this import files that have different variable names (to protect for users' having different options checked on their software) and then just keep the ones we want/merge or merge and have the extra varaibles appended to the end?
 ##* Solved: It imports from different files with different number of columns. In addition, the file_name is attached as a variable.
@@ -30,7 +39,7 @@ dat <- tbl_df(dat) # table dataframe
 # selecting the useful variables. 
 # [remove this comment final version] These are the variables marked in red in the Variable names dictionary ActisoftR file
 useful <- c("analysis_name", "subject_id", "interval_type", "interval_number", "start_date", 
-            "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time")
+            "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time", "file_name")
 dat <- select_(dat, .dots = useful)
 dat <- add_column(dat, actigraph = rep("Actiware",nrow(dat)), .before = 1)
 dat <- dplyr::rename(dat, subject_ID = subject_id)
@@ -46,15 +55,8 @@ files2 <- list.files( path = "EXAMPLE_DATA\\AMI", pattern = "*.csv") # list all 
 #dat2 <- do.call(rbind, lapply(paste("data\\AMI\\", files2, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 ## Did you change all files to .csv before importing?
 
-# this function allows to add the file name to the dataframe.
-read_csv_filename <- function(filename, sep = ",", header = TRUE, skip = 0){
-  mycsv <- read.csv(filename, sep = ",", header = TRUE, skip = 0)
-  mycsv$file_name <- filename 
-  mycsv
-}
-
-
-dat2 <- do.call(rbind.fill, lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)))
+dat2 <- rbindlist(lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)),  use.names = TRUE, fill = TRUE) #idcol = "id",
+#dat2 <- do.call(rbind.fill, lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)))
 
 
 dat2 <- tbl_df(dat2) # table dataframe 
