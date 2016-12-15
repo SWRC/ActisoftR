@@ -124,10 +124,10 @@ plot.Darwent <- function(x, acolor, shade = TRUE, datebreaks = "12 hour", ...){
   
   if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the colors
   
-  part <- nrow(distinct(x,subject_id)) # number of participants. It defines the height of the plot
+  part <- nrow(distinct(x,subject_ID)) # number of participants. It defines the height of the plot
   
   p <- ggplot() + 
-    geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_id, yend = subject_id),
+    geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID),
                  size = 8) + { # to add the shade periods
                    if(shade == TRUE) geom_rect(data = local.night.shade(x = x), aes(xmin = as.POSIXct(shadow.start, tz = "UTC"),
                                                                                     xmax = as.POSIXct(shadow.end, tz = "UTC"), ymin = 0, ymax = Inf), alpha = 0.075, fill = "green") } +
@@ -161,14 +161,14 @@ plot.Darwent <- function(x, acolor, shade = TRUE, datebreaks = "12 hour", ...){
 
 # Slice a data.frame 
 portion <- function(x, from , to , all = TRUE, ...){
-  part <- as.matrix (distinct(x, subject_id) ) #participant
+  part <- as.matrix (distinct(x, subject_ID) ) #participant
   mat2 <-  NULL
   
   if(length(from) != length(to))
     stop("the variables from and to must have same length ")
   
   for (i in 1 : length(part)){
-    mat <- filter(x, subject_id == part[[i,1]], datime_start >= from[i], datime_end <= to[i] )
+    mat <- filter(x, subject_ID == part[[i,1]], datime_start >= from[i], datime_end <= to[i] )
     mat2 <- rbind(mat2 , mat)
     mat2 <- na.omit(mat2)
   }
@@ -199,7 +199,7 @@ a <- local.night.shade(x = flight)
 
 fil <- filter(alldata2, interval_type == "SLEEP" | interval_type == "REST") # selecting only sleep and rest periods
 fil <- tbl_df(fil) 
-fil <- select(fil, subject_id, interval_type, interval_number, datime_start, datime_end)
+fil <- select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
 
 # Example Respironics study
 # plotting flight study without night period shade
