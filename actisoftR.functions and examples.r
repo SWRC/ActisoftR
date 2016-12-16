@@ -6,67 +6,78 @@ library("scales") # used for the x-axis tick values
 library("readr")
 library("tibble")
 library("lubridate")
+library("data.table")
 
 # *** Please, save the 'data' folder in your working directory
 
 # Example of setting my working directory
-# setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-12") 
-setwd("C:\\Users\\lwu1\\Dropbox\\ActisoftR\\")
-## Edgar -- can we use the Dropbox or you share the Google Drive version of folders so we can access the same folders and data file names? Will make it easier to coordinate.
+# setwd("C:/Edgar/Google Drive/Jobs/Sleep/2016-12-14") 
+setwd("C:\\Users\\lwu1\\Dropbox\\ActisoftR\\2016-12-14")
+
+# this function allows to add the file name to the dataframe.
+read_csv_filename <- function(filename, sep = ",", header = TRUE, skip = 0){
+  mycsv <- read.csv(filename, sep = ",", header = TRUE, skip = 0)
+  mycsv$file_name <- filename 
+  mycsv
+}
 
 # *** This first part will import the data ***
 
 # Importing Actiware data (for Philips-Respironics actigraphs)
 # Importing all the CSV files simultaneously.  
-files <- list.files( path = ".\\EXAMPLE_DATA\\Actiware", pattern = "*.csv") # list all the csv files 
-dat <- do.call(rbind, lapply(paste(".\\EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
+files <- list.files( path = "EXAMPLE_DATA\\Actiware", pattern = "*.csv") # list all the csv files 
+dat <- rbindlist(lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)), use.names = TRUE, fill = TRUE )
+#dat <- do.call(rbind, lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 dat <- tbl_df(dat) # table dataframe 
-## can we make this import files that have different variable names (to protect for users' having different options checked on their software) and then just keep the ones we want/merge or merge and have the extra varaibles appended to the end?
 
 # selecting the useful variables. 
-# [remove this comment final version] These are the variables marked in red in the Variable names dictionary ActisoftR file
 useful <- c("analysis_name", "subject_id", "interval_type", "interval_number", "start_date", 
-            "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time")
+            "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time", "file_name")
 dat <- select_(dat, .dots = useful)
-dat <- add_column(dat, actigraph = rep("Actiwatch",nrow(dat)), .before = 1)
-dat$bad <- "NaN" 
+dat <- add_column(dat, actigraph = rep("Actiware", nrow(dat)), .before = 1)
+dat <- dplyr::rename(dat, subject_ID = subject_id)
+dat$bad <- NA
 
-## ^ do not set default bad to NaN -- bad is equivalent to the existance of having an EXCLUDED interval overalp with a user requested interval
+## default bad set to NA -- bad variable is equivalent to having an EXCLUDED interval overalp with a user requested interval
+## if there is an overlap, the bad variable will be filled in with something other than NA and 0 in the report
 
+# Importing from AMI actigraphs
+files2 <- list.files( path = "EXAMPLE_DATA\\AMI", pattern = "*.csv") # list all the csv files 
 
-# Importing from AMI actigraphs 
-files2 <- list.files( path = ".\\EXAMPLE_DATA\\AMI", pattern = "*.txt") # list all the csv files 
-dat2 <- do.call(rbind, lapply(paste(".\\EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read.table(x, sep = "\t", header = TRUE, skip = 0)))
+#dat2 <- do.call(rbind.fill, lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)))
+dat2 <- rbindlist(lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)),  use.names = TRUE, fill = TRUE) #idcol = "id",
 
 dat2 <- tbl_df(dat2) # table dataframe 
-#print(tbl_df(dat2), n = 400)
-dat2 <- dat2[!is.na(dat2$IntNum),] # removing row containing NA's (Those giving the mean and the sd)
+dat2 <- dat2[!is.na(dat2$IntNum), ] # removing row containing NA's (Those giving the mean and the sd)
 
-# [remove this comment final version] Variables marked in red in the Variable names dictionary ActisoftR file
-useful2 <- c("ID",  "IntName", "IntNum", "sdate", "stime", "edate", "etime", "dur", "pslp", "smin", "bad")
+useful2 <- c("ID",  "IntName", "IntNum", "sdate", "stime", "edate", "etime", "dur", "pslp", "smin", "bad", "file_name")
 
 dat2 <- select_(dat2, .dots = useful2)
 dat2 <- add_column(dat2, actigraph = rep("AMI", nrow(dat2)), .before = 1)
-dat2 <- add_column(dat2, analysis_name = rep("NaN",nrow(dat2)), .before = 2)
+dat2 <- add_column(dat2, subject_ID = rep(NA, nrow(dat2)), .before = 2)
 
 # using the variables names from Actiware
-dat2 <- rename(dat2, subject_id = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
-               end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
+dat2 <- dplyr::rename(dat2, analysis_name = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
+                      end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
 
-## note that sleep efficiency from AMI is the pslp where IntType == "Down" ONLY and NOT the pslp where IntType == "O - O"
+dat2$subject_ID <- gsub("_.*$", "", dat2$analysis_name)
+dat2$efficiency <- ifelse(dat2$interval_type == "Down", dat2$efficiency, NA)
+## note that AMI sleep efficiency is "pslp" where IntType == "Down" ONLY and NOT "pslp" where IntType == "O - O"
+##* What would be the best option to match "efficiency" and "pslp" in both datasets?
+## I extracted the one we want to keep here but keep in mind when merging that efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
 
-            
-## I can't get the AMI to merge w the Actiware version of the files -- my AMI has too many variables. Need to see which data you are importing from the folder.
-            
-            
-alldata <- rbind(dat,dat2) # combining both datasets
+#alldata <- rbind.fill(dat,dat2) # combining both datasets
+##^^ to replace with the data.table version (remove rbind.fill)
+ll <- list(dat, dat2) 
+alldata <- rbindlist(ll, use.names = TRUE, fill = TRUE, idcol=FALSE)  
+
 alldata$datime_start <- paste( as.POSIXct( strptime( alldata$start_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$start_time)
 alldata$datime_end   <- paste( as.POSIXct( strptime( alldata$end_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$end_time)
 
 # Standarizing the interval_type
-alldata$interval_type[alldata$interval_type == "Down"] <- as.factor("REST")
+alldata$interval_type[alldata$interval_type == "Down"]  <- as.factor("REST")
 alldata$interval_type[alldata$interval_type == "O - O"] <- as.factor("SLEEP")
-alldata$interval_type[alldata$interval_type == "Up"] <- as.factor("ACTIVE")
+alldata$interval_type[alldata$interval_type == "Up"]    <- as.factor("ACTIVE")
 
 alldata2 <- alldata %>%
   group_by(interval_number, start_date, start_time, duration) %>%
@@ -75,14 +86,10 @@ alldata2 <- alldata %>%
 View(alldata2)
 
 
-
-
 # Importing flight Sleep-Work data type (Not real data)
 # this data is from the excel sheet Example01 example02 Darwent Plot v3-1.xls
 
-flight <- read.csv(file = 'data\\work\\work.csv', sep = ",", header = TRUE, skip = 0)
-## changing this to be more generic -- please update your filename to be "work"
-
+flight <- read.csv(file = 'EXAMPLE_DATA\\Work\\work.csv', sep = ",", header = TRUE, skip = 0)
 
 flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
 flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
@@ -91,8 +98,7 @@ flight <- flight[,-c(2,3)]
 colnames(flight) <- c("subject_id", "interval_type", "datime_start", "datime_end") # using unique variables system
 
 flight <- tbl_df(flight) # table dataframe 
-
-
+names(flight)[names(flight) == 'subject_id'] <- 'subject_ID'
 
 ################################################
 # *** This section contains some ActisoftR functions ***
@@ -104,11 +110,11 @@ plot.Darwent <- function(x, acolor, shade = TRUE, datebreaks = "12 hour", ...){
   
   if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the colors
   
-  part <- nrow(distinct(x,subject_id)) # number of participants. It defines the height of the plot
+  part <- nrow(distinct(x,subject_ID)) # number of participants. It defines the height of the plot
   
   p <- ggplot() + 
-    geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_id, yend = subject_id),
-                 size = 15) + { # to add the shade periods
+    geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID),
+                 size = 8) + { # to add the shade periods
                    if(shade == TRUE) geom_rect(data = local.night.shade(x = x), aes(xmin = as.POSIXct(shadow.start, tz = "UTC"),
                                                                                     xmax = as.POSIXct(shadow.end, tz = "UTC"), ymin = 0, ymax = Inf), alpha = 0.075, fill = "green") } +
     theme_bw() +
@@ -141,14 +147,14 @@ plot.Darwent <- function(x, acolor, shade = TRUE, datebreaks = "12 hour", ...){
 
 # Slice a data.frame 
 portion <- function(x, from , to , all = TRUE, ...){
-  part <- as.matrix (distinct(x, subject_id) ) #participant
+  part <- as.matrix (distinct(x, subject_ID) ) #participant
   mat2 <-  NULL
   
   if(length(from) != length(to))
-    stop("the variables from and to must have same lenght ")
+    stop("the variables from and to must have same length ")
   
   for (i in 1 : length(part)){
-    mat <- filter(x, subject_id == part[[i,1]], datime_start >= from[i], datime_end <= to[i] )
+    mat <- filter(x, subject_ID == part[[i,1]], datime_start >= from[i], datime_end <= to[i] )
     mat2 <- rbind(mat2 , mat)
     mat2 <- na.omit(mat2)
   }
@@ -179,7 +185,7 @@ a <- local.night.shade(x = flight)
 
 fil <- filter(alldata2, interval_type == "SLEEP" | interval_type == "REST") # selecting only sleep and rest periods
 fil <- tbl_df(fil) 
-fil <- select(fil, subject_id, interval_type, interval_number, datime_start, datime_end)
+fil <- select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
 
 # Example Respironics study
 # plotting flight study without night period shade
