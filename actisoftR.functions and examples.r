@@ -6,11 +6,7 @@ library("scales") # used for the x-axis tick values
 library("readr")
 library("tibble")
 library("lubridate")
-# library("plyr") # function rbind.fill
 library("data.table")
-
-## can we use dplyr::rbind_all instead of plyr::rbind.fill?
-## I have had issues with loading plyr after dplyr since loading in this order masks a number of functions I tend to use.
 
 # *** Please, save the 'data' folder in your working directory
 
@@ -41,10 +37,10 @@ dat <- tbl_df(dat) # table dataframe
 useful <- c("analysis_name", "subject_id", "interval_type", "interval_number", "start_date", 
             "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time", "file_name")
 dat <- select_(dat, .dots = useful)
-dat <- add_column(dat, actigraph = rep("Actiware",nrow(dat)), .before = 1)
+dat <- add_column(dat, actigraph = rep("Actiware", nrow(dat)), .before = 1)
 dat <- dplyr::rename(dat, subject_ID = subject_id)
 dat$bad <- NA
-#dat$bad <- "NaN" 
+
 ## default bad set to NA -- bad variable is equivalent to having an EXCLUDED interval overalp with a user requested interval
 ## if there is an overlap, the bad variable will be filled in with something other than NA and 0 in the report
 
@@ -53,7 +49,6 @@ dat$bad <- NA
 
 files2 <- list.files( path = "EXAMPLE_DATA\\AMI", pattern = "*.csv") # list all the csv files 
 #dat2 <- do.call(rbind, lapply(paste("data\\AMI\\", files2, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
-## Did you change all files to .csv before importing?
 
 dat2 <- rbindlist(lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)),  use.names = TRUE, fill = TRUE) #idcol = "id",
 #dat2 <- do.call(rbind.fill, lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)))
@@ -61,7 +56,7 @@ dat2 <- rbindlist(lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), functio
 
 dat2 <- tbl_df(dat2) # table dataframe 
 #print(tbl_df(dat2), n = 400)
-dat2 <- dat2[!is.na(dat2$IntNum),] # removing row containing NA's (Those giving the mean and the sd)
+dat2 <- dat2[!is.na(dat2$IntNum), ] # removing row containing NA's (Those giving the mean and the sd)
 
 # [remove this comment final version] Variables marked in red in the Variable names dictionary ActisoftR file
 useful2 <- c("ID",  "IntName", "IntNum", "sdate", "stime", "edate", "etime", "dur", "pslp", "smin", "bad", "file_name")
@@ -72,7 +67,7 @@ dat2 <- add_column(dat2, subject_ID = rep(NA, nrow(dat2)), .before = 2)
 
 # using the variables names from Actiware
 dat2 <- dplyr::rename(dat2, analysis_name = ID, interval_type = IntName, interval_number = IntNum, start_date = sdate, start_time = stime,
-               end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
+                      end_date = edate, end_time = etime, duration = dur, sleep_time = smin, efficiency = pslp)
 
 dat2$subject_ID <- gsub("_.*$", "", dat2$analysis_name)
 dat2$efficiency <- ifelse(dat2$interval_type == "Down", dat2$efficiency, NA)
@@ -82,13 +77,14 @@ dat2$efficiency <- ifelse(dat2$interval_type == "Down", dat2$efficiency, NA)
 
 #alldata <- rbind(dat,dat2) # combining both datasets
 alldata <- rbind.fill(dat,dat2) # combining both datasets
+##^^ to replace with the data.table version (remove rbind.fill)
 alldata$datime_start <- paste( as.POSIXct( strptime( alldata$start_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$start_time)
 alldata$datime_end   <- paste( as.POSIXct( strptime( alldata$end_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$end_time)
 
 # Standarizing the interval_type
-alldata$interval_type[alldata$interval_type == "Down"] <- as.factor("REST")
+alldata$interval_type[alldata$interval_type == "Down"]  <- as.factor("REST")
 alldata$interval_type[alldata$interval_type == "O - O"] <- as.factor("SLEEP")
-alldata$interval_type[alldata$interval_type == "Up"] <- as.factor("ACTIVE")
+alldata$interval_type[alldata$interval_type == "Up"]    <- as.factor("ACTIVE")
 
 
 alldata2 <- alldata %>%
@@ -110,9 +106,7 @@ flight <- flight[,-c(2,3)]
 colnames(flight) <- c("subject_id", "interval_type", "datime_start", "datime_end") # using unique variables system
 
 flight <- tbl_df(flight) # table dataframe 
-
-
-
+names(flight)[names(flight) == 'subject_id'] <- 'subject_ID'
 
 ################################################
 # *** This section contains some ActisoftR functions ***
