@@ -29,11 +29,8 @@ files <- list.files( path = "EXAMPLE_DATA\\Actiware", pattern = "*.csv") # list 
 dat <- rbindlist(lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)), use.names = TRUE, fill = TRUE )
 #dat <- do.call(rbind, lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 dat <- tbl_df(dat) # table dataframe 
-## can we make this import files that have different variable names (to protect for users' having different options checked on their software) and then just keep the ones we want/merge or merge and have the extra varaibles appended to the end?
-##* Solved: It imports from different files with different number of columns. In addition, the file_name is attached as a variable.
 
 # selecting the useful variables. 
-# [remove this comment final version] These are the variables marked in red in the Variable names dictionary ActisoftR file
 useful <- c("analysis_name", "subject_id", "interval_type", "interval_number", "start_date", 
             "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time", "file_name")
 dat <- select_(dat, .dots = useful)
@@ -44,21 +41,15 @@ dat$bad <- NA
 ## default bad set to NA -- bad variable is equivalent to having an EXCLUDED interval overalp with a user requested interval
 ## if there is an overlap, the bad variable will be filled in with something other than NA and 0 in the report
 
-
 # Importing from AMI actigraphs
-
 files2 <- list.files( path = "EXAMPLE_DATA\\AMI", pattern = "*.csv") # list all the csv files 
-#dat2 <- do.call(rbind, lapply(paste("data\\AMI\\", files2, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
 
-dat2 <- rbindlist(lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)),  use.names = TRUE, fill = TRUE) #idcol = "id",
 #dat2 <- do.call(rbind.fill, lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)))
-
+dat2 <- rbindlist(lapply(paste("EXAMPLE_DATA\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x, sep = ",", header = TRUE, skip = 0)),  use.names = TRUE, fill = TRUE) #idcol = "id",
 
 dat2 <- tbl_df(dat2) # table dataframe 
-#print(tbl_df(dat2), n = 400)
 dat2 <- dat2[!is.na(dat2$IntNum), ] # removing row containing NA's (Those giving the mean and the sd)
 
-# [remove this comment final version] Variables marked in red in the Variable names dictionary ActisoftR file
 useful2 <- c("ID",  "IntName", "IntNum", "sdate", "stime", "edate", "etime", "dur", "pslp", "smin", "bad", "file_name")
 
 dat2 <- select_(dat2, .dots = useful2)
@@ -75,9 +66,11 @@ dat2$efficiency <- ifelse(dat2$interval_type == "Down", dat2$efficiency, NA)
 ##* What would be the best option to match "efficiency" and "pslp" in both datasets?
 ## I extracted the one we want to keep here but keep in mind when merging that efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
 
-#alldata <- rbind(dat,dat2) # combining both datasets
-alldata <- rbind.fill(dat,dat2) # combining both datasets
+#alldata <- rbind.fill(dat,dat2) # combining both datasets
 ##^^ to replace with the data.table version (remove rbind.fill)
+ll <- list(dat, dat2) 
+alldata <- rbindlist(ll, use.names = TRUE, fill = TRUE, idcol=FALSE)  
+
 alldata$datime_start <- paste( as.POSIXct( strptime( alldata$start_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$start_time)
 alldata$datime_end   <- paste( as.POSIXct( strptime( alldata$end_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$end_time)
 
@@ -85,7 +78,6 @@ alldata$datime_end   <- paste( as.POSIXct( strptime( alldata$end_date, format = 
 alldata$interval_type[alldata$interval_type == "Down"]  <- as.factor("REST")
 alldata$interval_type[alldata$interval_type == "O - O"] <- as.factor("SLEEP")
 alldata$interval_type[alldata$interval_type == "Up"]    <- as.factor("ACTIVE")
-
 
 alldata2 <- alldata %>%
   group_by(interval_number, start_date, start_time, duration) %>%
