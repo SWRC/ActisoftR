@@ -96,7 +96,8 @@ read_actigraph_csv <- function(x = "EXAMPLE_DATA", ...){
   alldata$interval_type[alldata$interval_type == "O - O"] <- as.factor("SLEEP")
   alldata$interval_type[alldata$interval_type == "Up"] <- as.factor("ACTIVE")
 
-
+  alldata$sleep_time <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$sleep_time)
+    
   #alldata2 <- alldata %>%
   #  dplyr::group_by(interval_number, start_date, start_time, duration) %>%
   #  dplyr::filter_(all(interval_type != "24-Hr")) # removing intervals = "24-Hr"
