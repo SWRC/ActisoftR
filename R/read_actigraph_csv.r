@@ -102,7 +102,8 @@ read_actigraph_csv <- function(x = "EXAMPLE_DATA", ...){
   #  dplyr::filter_(all(interval_type != "24-Hr")) # removing intervals = "24-Hr"
 
   alldata2 <- alldata[alldata$interval_type != "24-Hr", ]
-
+  
+  alldata2 <- droplevels(alldata2)
 
   alldata2
   }
