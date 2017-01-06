@@ -61,9 +61,9 @@ report_period <- function(period, acti_data,...){
   pos_sum_types = c("first", "daily", "sequential", "time_to_time") # possible summary types
 
   if (sum( match(x = pos_sum_types, table = period$summary_type), na.rm = TRUE ) == 0){
-    stop("summary_type incorrectly defined. It most be one of these: 'first', 'daily', 'sequential'or 'time_to_time'")}
+    stop("summary_type incorrectly defined. It must be set to: 'first', 'daily', 'sequential' or 'time_to_time'")}
 
-    #period$summary_duration_h <- lubridate::hours(period$summary_duration_h)
+  #period$summary_duration_h <- lubridate::hours(period$summary_duration_h)
   #period$summary_end_datime[which(is.na(period$summary_end_datime))] <- period$summary_start_datime[which(is.na(period$summary_end_datime))] +
   #  period$summary_duration_h[which(is.na(period$summary_end_datime))]
 
