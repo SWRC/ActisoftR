@@ -33,7 +33,7 @@ read_actigraph_csv <- function(x = "EXAMPLE_DATA", ...){
               "start_time", "end_date", "end_time", "duration", "efficiency", "sleep_time", "file_name")
   #dat <- dplyr::select_(dat, .dots = useful)
   dat <- dat[, useful]
-  dat <- tibble::add_column(dat, actigraph = rep("Actiware",nrow(dat)), .before = 1)
+  dat <- tibble::add_column(dat, actigraph_brand = rep("Actiware",nrow(dat)), .before = 1)
   #dat <- dplyr::rename(dat, subject_id = subject_ID) #subject_ID = dat$subject_id
   data.table::setnames(dat, old = "subject_id", new = "subject_ID")
   dat$bad <- NA
@@ -60,7 +60,7 @@ read_actigraph_csv <- function(x = "EXAMPLE_DATA", ...){
 
   #dat2 <- select_(dat2, .dots = useful2)
   dat2 <- dat2[, useful2]
-  dat2 <- tibble::add_column(dat2, actigraph = rep("AMI", nrow(dat2)), .before = 1)
+  dat2 <- tibble::add_column(dat2, actigraph_brand = rep("AMI", nrow(dat2)), .before = 1)
   dat2 <- tibble::add_column(dat2, subject_ID = rep(NA, nrow(dat2)), .before = 2)
 
   # using the variables names from Actiware
