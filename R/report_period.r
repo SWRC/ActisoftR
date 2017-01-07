@@ -68,6 +68,8 @@ report_period <- function(period, acti_data,...){
   #  period$summary_duration_h[which(is.na(period$summary_end_datime))]
 
   period <- deagg(period)
+  period$summary_duration_h = seconds(period$summary_duration_h)
+  
   sum_types <- as.vector(t(distinct(period, summary_type))) # actual summary types
   startend <- tbl_df(int_startend(period))
   particip <- as.vector(t(distinct(period, actigraphy_file)))
