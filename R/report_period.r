@@ -3,14 +3,19 @@
 #'
 #'
 #' @param period a dataframe containing participants, start and end date/time period
-#' @param acti_data a dataframe of the form "acti_data".
+#' @param acti_data a dataframe of the form 'acti_data'.
+#' @param remove_bad a logical value used to indicate if the 'bad' or 'EXCLUDED' are removed. Set as TRUE.
 #' @param ... Optional parameters
 #'
 #' @return a dataframe
 #'
+#'@details Periods partially scored as 'bad' or 'EXCLUDED' are due to off-wrist or other reasons.
+#' In that case all summary estimates except ‘time in bed’ will be set to NA,
+#' and the column ‘with_excluded_bad’ will show TRUE. See examples in the Vignettes.
+#' This can be avoided using remove_bad = FALSE.
+#'
 #' @examples
 #'# Example 1
-
 #' library(lubridate)
 #' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 #' p <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example period.csv"),
@@ -27,8 +32,8 @@
 #'  sep = ",", header = TRUE, skip = 0)
 #' p2$summary_start_datime <- lubridate::dmy_hms(p2$summary_start_datime,  tz = "UTC")
 #' p2$summary_end_datime <- lubridate::dmy_hms(p2$summary_end_datime,  tz = "UTC")
-#' rep2 <- report_period(period = p2 , acti_data = acti_data2)
-#' #View(rep2)
+#' rep2 <- report_period(period = p2 , acti_data = acti_data2, remove_bad = TRUE)
+#' View(rep2)
 
 
 #'# Example 3
@@ -51,12 +56,23 @@
 #' #View(rep4)
 
 
+#'# Example 5 with Excluded periods
+#' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_3")
+#' p5 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_3\\input parameters example period with Excluded.csv"),
+#'  sep = ",", header = TRUE, skip = 0)
+#' p5$summary_start_datime <- dmy_hm(p5$summary_start_datime,  tz = "UTC")
+#' p5$summary_end_datime <- dmy_hm(p5$summary_end_datime,  tz = "UTC")
+#' rep5 <- report_period(period = p5 , acti_data = acti_data)
+#' View(rep5)
+
+
 #' @export
 #' @importFrom dplyr filter mutate summarise n
 #' @importFrom lubridate dmy_hm dmy_hms ymd_hms days
 
-report_period <- function(period, acti_data,...){
-  period = tbl_df(period)
+report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC",...){
+  period <- with_tz(period, tz = tz)
+  period <- tbl_df(period)
   actigraphy_file <- analysis_name <- interval_type <- exact3 <- duration <- sleep_time <- efficiency <- art <- NULL
   pos_sum_types = c("first", "daily", "sequential", "time_to_time") # possible summary types
 
@@ -68,16 +84,16 @@ report_period <- function(period, acti_data,...){
   #  period$summary_duration_h[which(is.na(period$summary_end_datime))]
 
   period <- deagg(period)
-  period$summary_duration_h = seconds(period$summary_duration_h)
-  
   sum_types <- as.vector(t(distinct(period, summary_type))) # actual summary types
   startend <- tbl_df(int_startend(period))
   particip <- as.vector(t(distinct(period, actigraphy_file)))
 
   acti_data$datime_start <- ymd_hms(acti_data$datime_start)
   acti_data$datime_end <- ymd_hms(acti_data$datime_end)
+  acti_data <- with_tz(acti_data, tz = tz)
 
-  acti_data <- tbl_df(filter(acti_data, analysis_name %in% particip, interval_type %in% c("REST", "SLEEP")))
+#acti_data <- tbl_df(filter(acti_data, analysis_name %in% particip, interval_type %in% c("REST", "SLEEP")))
+acti_data <- tbl_df(filter(acti_data, analysis_name %in% particip, interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM")))
 
   colName <- c("Actisoft_ID",	"period_number",
                "report_duration_m",	"number_of_rests",	"number_of_sleeps",	"number_of_rests_exact", "number_of_sleeps_exact",	"total_time_in_bed",
@@ -99,7 +115,20 @@ report_period <- function(period, acti_data,...){
       if(row$summary_start_datime > row$summary_end_datime) { art <- row$summary_start_datime; row$summary_start_datime <-
         row$summary_end_datime; row$summary_end_datime <- art }
       report <- data.frame(matrix(vector(), nrow=1, length(colName), dimnames = list(c(), colName)), stringsAsFactors = F)
-      mat <- portion_withoverlaps(tab1_sec, from = row$summary_start_datime,  to = row$summary_end_datime)
+mat0 <- portion_withoverlaps(tab1_sec, from = row$summary_start_datime,  to = row$summary_end_datime)
+mat <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
+
+ex <- mat0[mat0$interval_type == "EXCLUDED",]
+
+# to do: adapt for cases with more than two EXLUDED periods
+rem = FALSE
+if(nrow(ex) > 0){
+for (kk in 1 : nrow(mat)){
+  i1 <- interval(mat[kk,]$datime_start, mat[kk,]$datime_end)
+  i2 <- interval(ex$datime_start, ex$datime_end)
+  if(lubridate::int_overlaps(i1,i2) == TRUE) {rem = TRUE}
+  }
+  }
 
             # I need to check this
       mat$exact1 <- ifelse(mat$datime_start < row$summary_start_datime, 1 - ((row$summary_start_datime - mat$datime_start) / mat$duration), 1)
@@ -129,9 +158,27 @@ report_period <- function(period, acti_data,...){
       report$sleep_efficiency <- round(mat2$sleep_efficiency[1],2)
       report$longest_sleep_period <- mat2$longest_period[2]
       report$shortest_sleep_period <- mat2$shortest_period[2]
+      report$with_excluded_bad <- FALSE
       y <- y +  1
 
+if (remove_bad == TRUE){
+if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period is partially scored as Bad
+  report$number_of_rests_exact <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <-
+  report$longest_sleep_period <- report$shortest_sleep_period <- NA
+  report$with_excluded_bad <- TRUE
+}
 
+if(rem == TRUE){ # For Actiwatch, removing sleep period with Excluded
+  report$number_of_rests_exact <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <-
+  report$longest_sleep_period <- report$shortest_sleep_period <- NA
+  report$with_excluded_bad <- TRUE
+}
+}
+
+
+report$with_forced_sleep <- ifelse(nrow(mat0[mat0$interval_type == "FORCED SLEEP",]) > 0, TRUE, FALSE)
+report$with_forced_wake <- ifelse(nrow(mat0[mat0$interval_type == "FORCED WAKE",]) > 0, TRUE, FALSE)
+report$with_custom_interval <- ifelse(nrow(mat0[mat0$interval_type == "CUSTOM",]) > 0, TRUE, FALSE)
 
       if(as.numeric(row$summary_duration_h) < 0){ art <- row$summary_start_datime; row$summary_start_datime <-
         row$summary_end_datime; row$summary_end_datime <- art }
@@ -145,8 +192,9 @@ report_period <- function(period, acti_data,...){
 
   }
 
-  report2$summary_duration_h <- report2$summary_duration_h/3600
+
+
+  report2$summary_duration_h <- report2$summary_duration_h/3600 
   tbl_df(report2)
 }
-
 
