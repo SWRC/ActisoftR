@@ -154,8 +154,9 @@ datatable(rep4, width = 1000, height = 700)
 
 
 
-## Report based on parameter points
 
+## Report based on parameter points
+### Example # 1 
 We first import the file containing the parameter points:
 ```{r}
 input.param.point <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example point.csv"), sep = ",", header = TRUE, skip = 0)
@@ -163,12 +164,26 @@ input.param.point$time_point_datime <- dmy_hm(input.param.point$time_point_datim
 
 ```
 
-To generate the report
+To generate the report:
 ```{r}
 rep3 <- report_point(period = input.param.point, acti_data = acti_data)
-datatable( rep3, width = 1000, height = 750)
+datatable( rep3, width = 1000, height = 700)
 
 ```
+
+### Example # 2
+Excluded periods are shown in this example. The result in row 4 with_excluded_bad = TRUE
+
+```{r}
+acti_data2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_3")
+q2 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_3\\input parameters example point with Excluded.csv"),
+ sep = ",", header = TRUE, skip = 0)
+q2$time_point_datime <- dmy_hm(q2$time_point_datime,  tz = "UTC")
+rep2 <- report_point(period = q2, acti_data = acti_data2)
+datatable(rep2, width = 1000, height = 700)
+```
+
+
 
 # Plotting
 The function ```plot.Darwent``` allows you to plot participants' intervals say sleep/wake or sleep/work . The most useful arguments are:
@@ -224,6 +239,14 @@ w2 <- plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, l
 ggplotly(w2, width = 900, height = 600)
 ```
 
+Example # 3 
+The ```plot_long()``` can be used to visualize data when dealing with a long period of time. One participant at the time is plotted. The horizontal axis represents the day from the 0 to the 24hrs and the days are shown on the vertical axis. 
+
+```{r}
+dat <- read.csv("C:\\1\\EXAMPLE_DATA\\AMI\\example01_AMI.csv")
+w3 <- plot_long (x = dat)
+ggplotly(w3, width = 900, height = 600)
+```
 
 # References
 [Cite the paper(s) (if any) where the Darwent plot was suggested]
