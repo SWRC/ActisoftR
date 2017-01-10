@@ -5,6 +5,7 @@
 #' @param period a dataframe containing participants, start and end date/time period
 #' @param acti_data a dataframe of the form 'acti_data'.
 #' @param remove_bad a logical value used to indicate if the 'bad' or 'EXCLUDED' are removed. Set as TRUE.
+#' @param tz is the time zone. Optional argument. tz = "UTC" by default.
 #' @param ... Optional parameters
 #'
 #' @return a dataframe
