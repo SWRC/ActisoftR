@@ -3,6 +3,7 @@
 #'
 #' @param period a dataframe containing participants, start and end date/time interval
 #' @param acti_data a dataframe of the form "acti_data".
+#' @param tz is the time zone. Optional argument. tz = "UTC" by default.
 #' @param ... Optional parameters
 #'
 #' @return a dataframe
