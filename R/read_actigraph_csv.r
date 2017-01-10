@@ -21,6 +21,27 @@
 
 
 read_actigraph_csv <- function(x = "EXAMPLE_DATA", ...){
+  
+if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
+      dir.exists(paths = paste(x,"//Actiware", sep = "")) == FALSE){ # for different files in a single folder
+    files0 <- list.files( path = x, pattern = "*.csv") # list all the csv files
+
+    dir.create(path = paste(x,"//AMI", sep = ""), showWarnings = TRUE, recursive = FALSE, mode = "0777")
+    dir.create(path = paste(x,"//Actiware", sep = ""), showWarnings = TRUE, recursive = FALSE, mode = "0777")
+
+    for (ii in 1 : length(files0)){
+      one <- data.table::rbindlist(lapply(paste(x,"\\",files0[ii], sep = ""),
+                                          function(x) read_csv_filename(x)), use.names = TRUE, fill = TRUE )
+
+      if (any(colnames(one) == "ID")){ write.csv(one, paste(x,"\\AMI\\",files0[ii], sep = "") ) }
+      if (any(colnames(one) == "analysis_name")){ write.csv(one, paste(x,"\\Actiware\\",files0[ii], sep = "") ) }
+      if ( any(colnames(one) == "ID") == FALSE  && any(colnames(one) == "analysis_name") == FALSE){
+        print("there is at least a file that is not of the from AMI or Actiware in the folder. File(s) where not
+              imported")
+        }
+      }
+}
+  
   files <- list.files( path = paste(x,"\\Actiware", sep=""), pattern = "*.csv") # list all the csv files
 
   if (length(files) > 0){
