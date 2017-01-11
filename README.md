@@ -1,2 +1,2 @@
 # ActisoftR
-An R package to parse actigraphy data.
+Tools to import and parse actigraphy data.
