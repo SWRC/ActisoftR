@@ -118,6 +118,7 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
   alldata$interval_type[alldata$interval_type == "Up"] <- as.factor("ACTIVE")
 
   alldata$sleep_time <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$sleep_time)
+  alldata$efficiency <- as.numeric(as.character(alldata$efficiency))
   alldata$efficiency <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$efficiency)
   #alldata2 <- alldata %>%
   #  dplyr::group_by(interval_number, start_date, start_time, duration) %>%
