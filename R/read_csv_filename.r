@@ -10,8 +10,7 @@
 #' @export
 
 read_csv_filename <- function(filename){
- # mycsv <- read.csv(filename, sep = ",", header = TRUE, skip = 0)
-  mycsv <- read.csv(filename, sep = ",", header = TRUE, skip = 0, fileEncoding="UTF-8-BOM")
+  mycsv <- read.csv(filename, sep = ",", header = TRUE, skip = 0, na.strings = c("NA", "NaN", ".", "*"), fileEncoding = "UTF-8-BOM")
   mycsv$file_name <- filename
   mycsv
 }
