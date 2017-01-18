@@ -24,7 +24,7 @@
 #' p$summary_start_datime <- dmy_hm(p$summary_start_datime,  tz = "UTC")
 #' p$summary_end_datime <- dmy_hm(p$summary_end_datime,  tz = "UTC")
 #' rep1 <- report_period(period = p , acti_data = acti_data)
-#' #View(rep1)
+#' View(rep1)
 
 
 #'# Example 2
@@ -44,7 +44,7 @@
 #' p3$summary_start_datime <- lubridate::dmy_hm(p3$summary_start_datime,  tz = "UTC")
 #' p3$summary_end_datime <- lubridate::dmy_hm(p3$summary_end_datime,  tz = "UTC")
 #' rep3 <- report_period(period = p3 , acti_data = acti_data2)
-#' #View(rep3)
+#' View(rep3)
 
 
 #'# Example 4 mixed summary_type
@@ -82,7 +82,7 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC",...){
 
   #period$summary_duration_h <- lubridate::hours(period$summary_duration_h)
   #period$summary_end_datime[which(is.na(period$summary_end_datime))] <- period$summary_start_datime[which(is.na(period$summary_end_datime))] +
-  #  period$summary_duration_h[which(is.na(period$summary_end_datime))]
+  #period$summary_duration_h[which(is.na(period$summary_end_datime))]
 
   period <- deagg(period)
   sum_types <- as.vector(t(distinct(period, summary_type))) # actual summary types
@@ -124,27 +124,36 @@ ex <- mat0[mat0$interval_type == "EXCLUDED",]
 # to do: adapt for cases with more than two EXLUDED periods
 rem = FALSE
 if(nrow(ex) > 0){
-for (kk in 1 : nrow(mat)){
-  i1 <- interval(mat[kk,]$datime_start, mat[kk,]$datime_end)
-  i2 <- interval(ex$datime_start, ex$datime_end)
-  if(lubridate::int_overlaps(i1,i2) == TRUE) {rem = TRUE}
-  }
+#for (kk in 1 : nrow(mat)){
+#  i1 <- interval(mat[kk,]$datime_start, mat[kk,]$datime_end)
+#  i2 <- interval(ex$datime_start, ex$datime_end)
+#  if(lubridate::int_overlaps(i1,i2) == TRUE) {rem = TRUE}
+#  }
+  rem = TRUE
   }
 
-            # I need to check this
+matex <- dplyr::filter(mat0, interval_type %in% c("REST", "EXCLUDED"))
+matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start)
+
+      # I need to check this
       mat$exact1 <- ifelse(mat$datime_start < row$summary_start_datime, 1 - ((row$summary_start_datime - mat$datime_start) / mat$duration), 1)
       mat$exact2 <- ifelse(mat$datime_end > row$summary_end_datime, ((row$summary_end_datime - mat$datime_start ) / mat$duration), 1)
       mat$exact3 <-  mat$exact1 + mat$exact2 - 1
+
+      mat$duration_adj <- mat$exact3 * mat$duration
+      mat$sleep_time_adj <- mat$exact3 * mat$sleep_time
+
+mat$efficiency <- as.numeric(as.character(mat$efficiency))
 
       mat2 <-  mat %>%
         group_by(interval_type) %>%
         summarise(interval_number = n(),
                   number_exact = sum(as.numeric(exact3)),
-                  Duration = sum(duration),
-                  Sleep_time = sum(sleep_time),
-                  sleep_efficiency = sum(prop.table(duration) * efficiency), # not sure here. Verify
-                  longest_period = max(sleep_time),
-                  shortest_period = min(sleep_time)
+                  Duration = sum(duration_adj),
+                  Sleep_time = sum(sleep_time_adj),
+                  sleep_efficiency = sum(prop.table(duration_adj) * efficiency), # not sure here. Verify
+                  longest_period = max(sleep_time_adj),
+                  shortest_period = min(sleep_time_adj)
         )
 
       report$Actisoft_ID <- y
@@ -152,11 +161,11 @@ for (kk in 1 : nrow(mat)){
       report$report_duration_m <- abs(as.numeric(row$summary_duration_h)/60) #tab3$summary_duration_h[jj] * 60
       report$number_of_rests_exact <- as.numeric(mat2$number_exact[1])
       report$number_of_sleeps_exact <- as.numeric(mat2$number_exact[2])
-      report$number_of_rests <- mat2$interval_number[1]
+      report$number_of_rests <-  nrow(matex) #mat2$interval_number[1] +  #
       report$number_of_sleeps <- mat2$interval_number[2]
-      report$total_time_in_bed <- mat2$Duration[1]
+      report$total_time_in_bed <- mat2$Duration[1] + sum(ex$duration) #sum(matex$duration) + sum(ex$duration) #mat2$Duration[1]
       report$total_sleep <- mat2$Sleep_time[2]
-      report$sleep_efficiency <- round(mat2$sleep_efficiency[1],2)
+report$sleep_efficiency <- ifelse(mat$actigraph[1] == "AMI", round(mat2$sleep_efficiency[1],2), round(mat2$sleep_efficiency[2],2) )
       report$longest_sleep_period <- mat2$longest_period[2]
       report$shortest_sleep_period <- mat2$shortest_period[2]
       report$with_excluded_bad <- FALSE
@@ -195,7 +204,7 @@ report$with_custom_interval <- ifelse(nrow(mat0[mat0$interval_type == "CUSTOM",]
 
 
 
-  report2$summary_duration_h <- report2$summary_duration_h/3600 
+  report2$summary_duration_h <- report2$summary_duration_h/3600
   tbl_df(report2)
 }
 
