@@ -12,8 +12,8 @@
 #' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 #' library("dplyr")
 #' #fil <- acti_data[acti_data$interval_type == "SLEEP" | acti_data$interval_type == "REST",]
-#' #fil <- fil[fil$actigraph == "Actiware",]
-#' fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph == "Actiware")
+#' #fil <- fil[fil$actigraph_brand == "Actiware",]
+#' fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph_brand == "Actiware")
 #' fil <- dplyr::tbl_df(fil)
 #' fil <- dplyr::select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
 #' plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day")
@@ -99,7 +99,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 #' Plots SLEEP intervals.
 #'
 #' @param x a dataframe.
-#' @param acolor the color of he lines
+#' @param acolor the color of the lines
 #' @param ... Optional parameters
 #' @return a plot
 #'
