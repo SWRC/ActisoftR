@@ -38,7 +38,7 @@
 #' @rdname plot.Darwent
 
 
-plot_Darwent <- function(x, acolor, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", ...){
+plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", ...){
   #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
   #foo <- dplyr::mutate(foo, datime_start = as.POSIXct(foo$datime_start,tz = "UTC"), datime_end = as.POSIXct(foo$datime_end,tz = "UTC"))
@@ -46,7 +46,7 @@ plot_Darwent <- function(x, acolor, shade = FALSE, local.shade = FALSE, datebrea
   foo$datime_start <- as.POSIXct(foo$datime_start, tz = "UTC")
   foo$datime_end = as.POSIXct(foo$datime_end,tz = "UTC")
 
-  if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the colors
+#if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Defining the colors
 
   #part <- nrow(distinct(x,x$subject_ID)) # number of participants. It defines the height of the plot
   part <- length(unique(x$subject_ID))
@@ -69,7 +69,7 @@ plot_Darwent <- function(x, acolor, shade = FALSE, local.shade = FALSE, datebrea
     xlab("Date-Time") +
     ylab("Participant(s)") +
     theme_classic() +
-    scale_color_manual(values = acolor) +
+#scale_color_manual(values = acolor) +
     scale_fill_manual(name = "Act")
 
   # resizing the plotting area
@@ -91,6 +91,7 @@ plot_Darwent <- function(x, acolor, shade = FALSE, local.shade = FALSE, datebrea
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
     ggtitle("Darwent plot")
 }
+
 
 
 
