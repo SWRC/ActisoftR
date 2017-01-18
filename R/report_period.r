@@ -165,7 +165,7 @@ mat$efficiency <- as.numeric(as.character(mat$efficiency))
       report$number_of_sleeps <- mat2$interval_number[2]
       report$total_time_in_bed <- mat2$Duration[1] + sum(ex$duration) #sum(matex$duration) + sum(ex$duration) #mat2$Duration[1]
       report$total_sleep <- mat2$Sleep_time[2]
-report$sleep_efficiency <- ifelse(mat$actigraph[1] == "AMI", round(mat2$sleep_efficiency[1],2), round(mat2$sleep_efficiency[2],2) )
+report$sleep_efficiency <- ifelse(mat$actigraph_brand[1] == "AMI", round(mat2$sleep_efficiency[1],2), round(mat2$sleep_efficiency[2],2) )
       report$longest_sleep_period <- mat2$longest_period[2]
       report$shortest_sleep_period <- mat2$shortest_period[2]
       report$with_excluded_bad <- FALSE
