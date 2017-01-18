@@ -62,9 +62,19 @@ bypart <- dplyr::filter(acti_data, analysis_name %in% particip,
     tab1 <- dplyr::filter(bypart, analysis_name == particip[ii])
     tab2 <- dplyr::filter(period, actigraphy_file == particip[ii])
 
+
     for (jj in 1 : nrow(tab2)){
 mat0 <- dplyr::filter(tab1, datime_end <= tab2$time_point_datime[jj])
 mat <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
+
+tab1_sec <- portion_withoverlaps (mat0, from = tab2$time_point_datime[jj] - lubridate::hours(24) ,  to = tab2$time_point_datime[jj] )
+
+matex <- dplyr::filter(tab1_sec, interval_type %in% c("REST", "EXCLUDED"))
+matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start)
+
+ex <- matex[matex$interval_type == "EXCLUDED",]
+
+
       mat <- tbl_df(mat)
 
       mat2 <- mat %>%
@@ -72,7 +82,15 @@ mat <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
         summarise(datime_end  = max(datime_end)
         )
 
-mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datime[jj])) 
+
+      matex2 <- matex %>%
+        group_by(interval_type) %>%
+        summarise(datime_end  = max(datime_end)
+        )
+
+
+
+mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datime[jj])) #, interval_type %in% c("REST", "SLEEP")
       mat4 <- mat3 %>%
         group_by(interval_type) %>%
         summarise(datime_end  = max(datime_end),
@@ -81,9 +99,9 @@ mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datim
 
       report$Actisoft_ID <- y
       report$period_number <- jj
-      report$time_since_up <- difftime(tab2$time_point_datime[jj] , mat2$datime_end[1], units = "mins" )
-      report$time_awake <- difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" )
-      report$last_rest_end <- mat2$datime_end[1]
+      report$time_since_up <- difftime(tab2$time_point_datime[jj] , max(matex2$datime_end), units = "mins") #difftime(tab2$time_point_datime[jj] , mat2$datime_end[1], units = "mins" )
+      report$time_awake <- ifelse(nrow(ex) == 0, difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA)
+      report$last_rest_end <- max(matex2$datime_end) #mat2$datime_end[1]
       report$last_sleep_end <- mat2$datime_end[2]
       report$point_overlap_bed <- mat4$point_overlap[1]
       report$point_overlap_sleep <- mat4$point_overlap[2]
@@ -93,18 +111,19 @@ if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period is partiall
 report$with_excluded_bad <- TRUE
 }
 
-ex <- mat3[mat3$interval_type == "EXCLUDED",]
+
 mat3p <- dplyr::filter(mat3, interval_type %in% c("REST", "SLEEP")) #,
 
 rem = FALSE
 if(nrow(ex) > 0){
-  for (ll in 1 : nrow(ex)){
-  for (kk in 1 : nrow(mat3p)){
-    i1 <- interval(mat3p[kk,]$datime_start, mat3p[kk,]$datime_end)
-    i2 <- interval(ex[ll,]$datime_start, ex[ll,]$datime_end)
-    if(lubridate::int_overlaps(i1,i2) == TRUE) {rem = TRUE}
-  }
-  }
+#  for (ll in 1 : nrow(ex)){
+#  for (kk in 1 : nrow(mat3p)){
+#    i1 <- interval(mat3p[kk,]$datime_start, mat3p[kk,]$datime_end)
+#    i2 <- interval(ex[ll,]$datime_start, ex[ll,]$datime_end)
+#    if(lubridate::int_overlaps(i1,i2) == TRUE) {rem = TRUE}
+#  }
+#  }
+rem = TRUE
 }
 
 if(rem == TRUE){ # For Actiwatch, removing sleep period with Excluded
@@ -124,3 +143,4 @@ report$with_custom_interval <- ifelse(nrow(acti_data[acti_data$interval_type == 
   report2 <- cbind(period, report2)
   tbl_df(report2)
 }
+
