@@ -68,10 +68,6 @@ portion_withoverlaps <- function(x, from , to , ...){
   if(length(from) != length(to))
     stop("the variables from and to must have same length ")
 
-  if (length(part) > length(from)) {
-  from <- rep(from, length(part))
-  to <- rep(to, length(part)) }
-      
   for (i in 1 : length(part)){
     int2 <- lubridate::interval(from[i], to[i])
 
@@ -82,6 +78,4 @@ portion_withoverlaps <- function(x, from , to , ...){
   }
   mat2
 }
-
-
 
