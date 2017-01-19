@@ -1,4 +1,4 @@
-#' Imports data from different actigraphs output files.
+#' Imports scored actigraphy data from different actigraph brand output files.
 #'
 #' Place in your working directory the folder EXAMPLE_DATA containing the subfolders 'Actiware' and 'AMI'.
 #' It imports all the CSV files from the above folders and so far, it supports CSV files only. A standard file name is not required.
