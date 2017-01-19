@@ -37,14 +37,14 @@
 
 report_point <- function(period, acti_data, tz = "UTC",...){
 period <- with_tz(period, tz = tz)
-  particip <- as.vector(t(distinct(period, actigraphy_file)))
+  particip <- as.vector(t(distinct(period, subject_ID)))
 
   acti_data$datime_start <- lubridate::ymd_hms(acti_data$datime_start)
-  acti_data$datime_end <- lubridate::ymd_hms(acti_data$datime_end)
+  acti_data$datime_end   <- lubridate::ymd_hms(acti_data$datime_end)
 acti_data <- with_tz(acti_data, tz = tz)
 
-#bypart <- dplyr::filter(acti_data, analysis_name %in% particip, interval_type %in% c("REST", "SLEEP"))
-bypart <- dplyr::filter(acti_data, analysis_name %in% particip,
+#bypart <- dplyr::filter(acti_data, subject_ID %in% particip, interval_type %in% c("REST", "SLEEP"))
+bypart <- dplyr::filter(acti_data, subject_ID %in% particip,
                         interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM"))
 
   bypart <- dplyr::tbl_df(bypart)
@@ -59,13 +59,13 @@ bypart <- dplyr::filter(acti_data, analysis_name %in% particip,
   y <- 1
   report2 = NULL
   for (ii in 1 : length(particip)){
-    tab1 <- dplyr::filter(bypart, analysis_name == particip[ii])
-    tab2 <- dplyr::filter(period, actigraphy_file == particip[ii])
+    tab1 <- dplyr::filter(bypart, subject_ID == particip[ii])
+    tab2 <- dplyr::filter(period, subject_ID == particip[ii])
 
 
     for (jj in 1 : nrow(tab2)){
 mat0 <- dplyr::filter(tab1, datime_end <= tab2$time_point_datime[jj])
-mat <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
+mat  <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
 
 tab1_sec <- portion_withoverlaps (mat0, from = tab2$time_point_datime[jj] - lubridate::hours(24) ,  to = tab2$time_point_datime[jj] )
 
