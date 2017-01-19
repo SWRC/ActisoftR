@@ -57,7 +57,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
                    #if(missing(TZ)) TZ = 0
                    #if(missing(shadow.start)) shadow.start = "22:00:00"
                    #if(missing(shadow.end)) shadow.end = "08:00:00"
-                   shadow.start = "22:00:00"; shadow.end = "08:00:00"
+                   shadow.start = "10:00:00"; shadow.end = "20:00:00"
                    if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = as.POSIXct(shadow.start, tz = "UTC"),
                                                                                    xmax = as.POSIXct(shadow.end, tz = "UTC"),
                                                                                    ymin = 0, ymax = Inf), alpha = 0.175, fill = "green") } + {
