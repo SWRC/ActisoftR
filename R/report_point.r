@@ -36,16 +36,16 @@
 
 
 report_point <- function(period, acti_data, tz = "UTC",...){
-period <- with_tz(period, tz = tz)
+  period <- with_tz(period, tz = tz)
   particip <- as.vector(t(distinct(period, subject_ID)))
 
   acti_data$datime_start <- lubridate::ymd_hms(acti_data$datime_start)
   acti_data$datime_end   <- lubridate::ymd_hms(acti_data$datime_end)
-acti_data <- with_tz(acti_data, tz = tz)
+  acti_data <- with_tz(acti_data, tz = tz)
 
-#bypart <- dplyr::filter(acti_data, subject_ID %in% particip, interval_type %in% c("REST", "SLEEP"))
-bypart <- dplyr::filter(acti_data, subject_ID %in% particip,
-                        interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM"))
+  #bypart <- dplyr::filter(acti_data, subject_ID %in% particip, interval_type %in% c("REST", "SLEEP"))
+  bypart <- dplyr::filter(acti_data, subject_ID %in% particip,
+                          interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM"))
 
   bypart <- dplyr::tbl_df(bypart)
 
@@ -64,16 +64,17 @@ bypart <- dplyr::filter(acti_data, subject_ID %in% particip,
 
 
     for (jj in 1 : nrow(tab2)){
-mat0 <- dplyr::filter(tab1, datime_end <= tab2$time_point_datime[jj])
-mat  <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
+      mat0 <- dplyr::filter(tab1, datime_end <= tab2$time_point_datime[jj])
+      mat  <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
 
-tab1_sec <- portion_withoverlaps (mat0, from = tab2$time_point_datime[jj] - lubridate::hours(24) ,  to = tab2$time_point_datime[jj] )
+      tab1_sec <- portion_withoverlaps (mat0, from = tab2$time_point_datime[jj] - lubridate::hours(24) ,  to = tab2$time_point_datime[jj] )
 
-matex <- dplyr::filter(tab1_sec, interval_type %in% c("REST", "EXCLUDED"))
-matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start)
+      matex <- dplyr::filter(tab1_sec, interval_type %in% c("REST", "EXCLUDED"))
+      matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start)
 
-ex <- matex[matex$interval_type == "EXCLUDED",]
+      ex <- matex[matex$interval_type == "EXCLUDED",]
 
+      last_int <- matex[which(matex$datime_end == max(matex$datime_end)),]$interval_type
 
       mat <- tbl_df(mat)
 
@@ -90,7 +91,7 @@ ex <- matex[matex$interval_type == "EXCLUDED",]
 
 
 
-mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datime[jj])) #, interval_type %in% c("REST", "SLEEP")
+      mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datime[jj])) #, interval_type %in% c("REST", "SLEEP")
       mat4 <- mat3 %>%
         group_by(interval_type) %>%
         summarise(datime_end  = max(datime_end),
@@ -100,38 +101,38 @@ mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datim
       report$Actisoft_ID <- y
       report$period_number <- jj
       report$time_since_up <- difftime(tab2$time_point_datime[jj] , max(matex2$datime_end), units = "mins") #difftime(tab2$time_point_datime[jj] , mat2$datime_end[1], units = "mins" )
-      report$time_awake <- ifelse(nrow(ex) == 0, difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA)
+      report$time_awake <- ifelse(last_int == "REST", difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA) #ifelse(nrow(ex) == 0, difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA)
       report$last_rest_end <- max(matex2$datime_end) #mat2$datime_end[1]
       report$last_sleep_end <- mat2$datime_end[2]
       report$point_overlap_bed <- mat4$point_overlap[1]
       report$point_overlap_sleep <- mat4$point_overlap[2]
-report$with_excluded_bad <- FALSE
+      report$with_excluded_bad <- FALSE
 
-if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period is partially scored as Bad
-report$with_excluded_bad <- TRUE
-}
+      if(sum(tab1_sec$bad, na.rm = TRUE) > 0){ # mat$bad #For AMI, removing sleep period is partially scored as Bad
+        report$with_excluded_bad <- TRUE
+      }
 
 
-mat3p <- dplyr::filter(mat3, interval_type %in% c("REST", "SLEEP")) #,
+      mat3p <- dplyr::filter(mat3, interval_type %in% c("REST", "SLEEP")) #,
 
-rem = FALSE
-if(nrow(ex) > 0){
-#  for (ll in 1 : nrow(ex)){
-#  for (kk in 1 : nrow(mat3p)){
-#    i1 <- interval(mat3p[kk,]$datime_start, mat3p[kk,]$datime_end)
-#    i2 <- interval(ex[ll,]$datime_start, ex[ll,]$datime_end)
-#    if(lubridate::int_overlaps(i1,i2) == TRUE) {rem = TRUE}
-#  }
-#  }
-rem = TRUE
-}
+      rem = FALSE
+      if(last_int == "EXCLUDED"){ #(nrow(ex) > 0){
+        #  for (ll in 1 : nrow(ex)){
+        #  for (kk in 1 : nrow(mat3p)){
+        #    i1 <- interval(mat3p[kk,]$datime_start, mat3p[kk,]$datime_end)
+        #    i2 <- interval(ex[ll,]$datime_start, ex[ll,]$datime_end)
+        #    if(lubridate::int_overlaps(i1,i2) == TRUE) {rem = TRUE}
+        #  }
+        #  }
+        rem = TRUE
+      }
 
-if(rem == TRUE){ # For Actiwatch, removing sleep period with Excluded
-  report$with_excluded_bad <- TRUE}
+      if(rem == TRUE){ # For Actiwatch, removing sleep period with Excluded
+        report$with_excluded_bad <- TRUE}
 
-report$with_forced_sleep <- ifelse(nrow(acti_data[acti_data$interval_type == "FORCED SLEEP",]) > 0, TRUE, FALSE)
-report$with_forced_wake <- ifelse(nrow(acti_data[acti_data$interval_type == "FORCED WAKE",]) > 0, TRUE, FALSE)
-report$with_custom_interval <- ifelse(nrow(acti_data[acti_data$interval_type == "CUSTOM",]) > 0, TRUE, FALSE)
+      report$with_forced_sleep <- ifelse(nrow(acti_data[acti_data$interval_type == "FORCED SLEEP",]) > 0, TRUE, FALSE)
+      report$with_forced_wake <- ifelse(nrow(acti_data[acti_data$interval_type == "FORCED WAKE",]) > 0, TRUE, FALSE)
+      report$with_custom_interval <- ifelse(nrow(acti_data[acti_data$interval_type == "CUSTOM",]) > 0, TRUE, FALSE)
 
 
       report2 <- rbind(report2, report)
@@ -143,4 +144,5 @@ report$with_custom_interval <- ifelse(nrow(acti_data[acti_data$interval_type == 
   report2 <- cbind(period, report2)
   tbl_df(report2)
 }
+
 
