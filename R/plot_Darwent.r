@@ -11,8 +11,6 @@
 #' @examples
 #' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 #' library("dplyr")
-#' #fil <- acti_data[acti_data$interval_type == "SLEEP" | acti_data$interval_type == "REST",]
-#' #fil <- fil[fil$actigraph_brand == "Actiware",]
 #' fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph_brand == "Actiware")
 #' fil <- dplyr::tbl_df(fil)
 #' fil <- dplyr::select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
@@ -27,9 +25,14 @@
 #' flight <- tbl_df(flight)
 #' homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3), decal = c(0,0,5))
 #' head(flight)
-#' #plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, datebreaks = "1 day")
+#' #plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, datebreaks = "12 hour")
 #' part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3), decal = c(0,0,5))
-#' plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, local.shade = TRUE, datebreaks = "1 day")
+#' plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, local.shade = TRUE, datebreaks = "12 hour")
+#'
+#' # Example # 3
+#' decal = data.frame(subject_ID = c("participant01" ,"participant02"), dec = c(0,-2))
+#' plot_Darwent(x = fil, shade = FALSE, datebreaks = "12 hours", decal = decal)
+#'
 #' @export
 #' @importFrom grDevices dev.new dev.off x11 windows
 #' @importFrom dplyr distinct
@@ -38,7 +41,7 @@
 #' @rdname plot.Darwent
 
 
-plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", ...){
+plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, ...){
   #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
   #foo <- dplyr::mutate(foo, datime_start = as.POSIXct(foo$datime_start,tz = "UTC"), datime_end = as.POSIXct(foo$datime_end,tz = "UTC"))
@@ -46,20 +49,88 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   foo$datime_start <- as.POSIXct(foo$datime_start, tz = "UTC")
   foo$datime_end = as.POSIXct(foo$datime_end,tz = "UTC")
 
-#if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Defining the colors
-
   #part <- nrow(distinct(x,x$subject_ID)) # number of participants. It defines the height of the plot
   part <- length(unique(x$subject_ID))
+  participant <- unique(x$subject_ID)
+  participant <- droplevels(participant)
 
-  p <-ggplot2::ggplot() +
+  if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0,part))}
+
+
+if(base == "TRUE"){ # matching the participants at the same start date
+  foo <- as.data.frame(foo)
+  foo$datime_start <- as.POSIXct(foo$datime_start, tz = "UTC")
+  foo$datime_end = as.POSIXct(foo$datime_end,tz = "UTC")
+
+  foo2 <-  foo %>%
+    group_by(subject_ID) %>%
+    summarise(datime_start = min(datime_start))
+
+  foo2$datime_start <- round(foo2$datime_start,"days")
+
+  minim <- min(foo2$datime_start)
+  minim <- round(minim,"days")
+
+  foo2$minim <- minim
+  foo2$base <- foo2$minim - foo2$datime_start
+
+  foo2$datime_start <- as.Date(foo2$datime_start)
+  foo2$minim <- as.Date(foo2$minim)
+
+  foo3 <- foo %>% left_join(foo2, by = "subject_ID")
+
+  foo3$adj <- foo3$datime_start.x + seconds(foo3$base)
+  foo3$adj2 <- foo3$datime_end + seconds(foo3$base)
+
+  foo3$datime_start <- foo3$adj
+  foo3$datime_end <- foo3$adj2
+
+  foo3 <- droplevels(foo3)
+
+  foo4 <- foo3 %>% left_join(decal, by = "subject_ID")
+  foo4$decal <- foo4$dec * 60*60*24
+
+  foo4$datime_start <- foo4$datime_start + foo4$decal
+  foo4$datime_end <- foo4$datime_end + foo4$decal
+
+  #foo4 <- foo3
+  #useful <- c("subject_ID", "interval_type", "interval_number", "adj", "adj2")
+  #foo4 <- foo4[, useful]
+
+  #names(foo4)[names(foo4)=="adj"] <- "datime_start"
+  #names(foo4)[names(foo4)=="adj2"] <- "datime_end"
+
+  #foo <- foo4
+  foo <- foo4
+}
+
+
+  if (export == TRUE){
+    usef <- c("subject_ID", "datime_start", "datime_end", "interval_type")
+    Darw_data <- foo[, usef]
+    Darw_data2 <-  Darw_data %>% left_join(decal, by = "subject_ID")
+    write.csv(Darw_data2, "Darw_data.csv")
+  }
+
+
+if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Defining the colors
+
+
+
+
+  p <-ggplot2::ggplot() +    #strftime(minim, format="%H:%M:%S")
     geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID),
                  size = 8) + { # to add the shade periods
                    #if(missing(TZ)) TZ = 0
                    #if(missing(shadow.start)) shadow.start = "22:00:00"
                    #if(missing(shadow.end)) shadow.end = "08:00:00"
-                   shadow.start = "10:00:00"; shadow.end = "20:00:00"
-                   if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = as.POSIXct(shadow.start, tz = "UTC"),
-                                                                                   xmax = as.POSIXct(shadow.end, tz = "UTC"),
+                   #shadow.start = "22:00:00";
+                   shadow.start = "10:00:00"
+                   shadow.end = "20:00:00"
+
+
+                   if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = as.POSIXct(shadow.start), #, tz = "UTC"
+                                                                                   xmax = as.POSIXct(shadow.end), #, tz = "UTC"
                                                                                    ymin = 0, ymax = Inf), alpha = 0.175, fill = "green") } + {
                   if(local.shade == TRUE) geom_segment(data = local.night.shade(x = x, part_homeTZ = part_homeTZ),
                                                        aes(colour = interval_type, x = as.POSIXct(grayzone.start,tz = "UTC"), #ymd_hms
@@ -69,7 +140,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
     xlab("Date-Time") +
     ylab("Participant(s)") +
     theme_classic() +
-#scale_color_manual(values = acolor) +
+scale_color_manual(values = acolor) +
     scale_fill_manual(name = "Act")
 
   # resizing the plotting area
@@ -78,9 +149,9 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
     dev.new(record = TRUE, width = Width, height = Height)}
   resize.win(14, 2 * part)
 
-  p + scale_x_datetime(breaks = date_breaks(datebreaks),  # "12 hour" or "1 day"
+  p + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
                        minor_breaks = date_breaks(datebreaks),
-                       labels = date_format("%y-%m-%d %H.%M",
+                       labels = date_format("%H.%M", #"%y-%m-%d %H.%M"
                                             tz = "UTC")) +
     theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
     theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
@@ -90,7 +161,8 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
                                     hjust = 0.5)) +
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
     ggtitle("Darwent plot")
-}
+
+  }
 
 
 
