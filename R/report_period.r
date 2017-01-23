@@ -87,14 +87,14 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC",...){
   period <- deagg(period)
   sum_types <- as.vector(t(distinct(period, summary_type))) # actual summary types
   startend <- tbl_df(int_startend(period))
-  particip <- as.vector(t(distinct(period, actigraphy_file)))
+  particip <- as.vector(t(distinct(period, subject_ID)))
 
   acti_data$datime_start <- ymd_hms(acti_data$datime_start)
   acti_data$datime_end <- ymd_hms(acti_data$datime_end)
   acti_data <- with_tz(acti_data, tz = tz)
 
 #acti_data <- tbl_df(filter(acti_data, analysis_name %in% particip, interval_type %in% c("REST", "SLEEP")))
-acti_data <- tbl_df(filter(acti_data, analysis_name %in% particip, interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM")))
+acti_data <- tbl_df(filter(acti_data, subject_ID %in% particip, interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM")))
 
   colName <- c("Actisoft_ID",	"period_number",
                "report_duration_m",	"number_of_rests",	"number_of_sleeps",	"number_of_rests_exact", "number_of_sleeps_exact",	"total_time_in_bed",
@@ -105,10 +105,10 @@ acti_data <- tbl_df(filter(acti_data, analysis_name %in% particip, interval_type
   y <- 1
   for (ii in 1 : length(particip)){
 
-    tab1 <- filter(acti_data, analysis_name == particip[ii])
-    tab2 <- filter(startend, actigraphy_file == particip[ii])
+    tab1 <- filter(acti_data, subject_ID == particip[ii])
+    tab2 <- filter(startend, subject_ID == particip[ii])
     tab1_sec <- portion_withoverlaps (tab1, from = tab2$summary_start_datime,  to = tab2$summary_end_datime)
-    tab3 <- filter(period, actigraphy_file == particip[ii])
+    tab3 <- filter(period, subject_ID == particip[ii])
 
     for (jj in 1 : nrow(tab3)){
 
@@ -207,4 +207,6 @@ report$with_custom_interval <- ifelse(nrow(mat0[mat0$interval_type == "CUSTOM",]
   report2$summary_duration_h <- report2$summary_duration_h/3600
   tbl_df(report2)
 }
+
+
 
