@@ -54,7 +54,7 @@
 #' p4$summary_start_datime <- lubridate::dmy_hm(p4$summary_start_datime,  tz = "UTC")
 #' p4$summary_end_datime <- lubridate::dmy_hm(p4$summary_end_datime,  tz = "UTC")
 #' rep4 <- report_period(period = p4 , acti_data = acti_data2)
-#' #View(rep4)
+#' View(rep4)
 
 
 #'# Example 5 with Excluded periods
@@ -158,12 +158,12 @@ mat$efficiency <- as.numeric(as.character(mat$efficiency))
 
       report$Actisoft_ID <- y
       report$period_number <- jj
-      report$report_duration_m <- abs(as.numeric(row$summary_duration_h)/60) #tab3$summary_duration_h[jj] * 60
+      report$report_duration_m <- abs(as.numeric(row$summary_duration_h)/60) 
       report$number_of_rests_exact <- as.numeric(mat2$number_exact[1])
       report$number_of_sleeps_exact <- as.numeric(mat2$number_exact[2])
-      report$number_of_rests <-  nrow(matex) #mat2$interval_number[1] +  #
+      report$number_of_rests <-  nrow(matex) 
       report$number_of_sleeps <- mat2$interval_number[2]
-      report$total_time_in_bed <- mat2$Duration[1] + sum(ex$duration) #sum(matex$duration) + sum(ex$duration) #mat2$Duration[1]
+      report$total_time_in_bed <- sum(matex$duration) 
       report$total_sleep <- mat2$Sleep_time[2]
 report$sleep_efficiency <- ifelse(mat$actigraph_brand[1] == "AMI", round(mat2$sleep_efficiency[1],2), round(mat2$sleep_efficiency[2],2) )
       report$longest_sleep_period <- mat2$longest_period[2]
