@@ -35,7 +35,7 @@
 #'
 #' @export
 #' @importFrom grDevices dev.new dev.off x11 windows
-#' @importFrom dplyr distinct
+#' @importFrom dplyr distinct left_join
 #' @importFrom scales date_breaks date_format
 #' @import ggplot2
 #' @rdname plot.Darwent
