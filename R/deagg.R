@@ -38,12 +38,12 @@ deagg <-  function(period){ #deaggregation
   #period$summary_duration_h[is.na(period$summary_duration_h)] <- as.numeric(difftime(period$summary_end_datime[is.na(period$summary_duration_h)],  period$summary_start_datime[is.na(period$summary_duration_h)], units="hours"))
   #period$summary_end_datime[is.na(period$summary_duration_h)] -  period$summary_start_datime[is.na(period$summary_duration_h)]
 
-  particip <- as.vector(t(dplyr::distinct(period, actigraphy_file)))
+  particip <- as.vector(t(dplyr::distinct(period, subject_ID))) #actigraphy_file
 
   for (ii in 1 : length(particip)){
 
-    ds0 <- dplyr::tbl_df(filter(period, actigraphy_file == particip[ii], summary_type %in% c("first", "time_to_time")))
-    ds <- dplyr::tbl_df(filter(period, actigraphy_file == particip[ii], summary_type %in% c("sequential", "daily"))) #daily and sequential
+    ds0 <- dplyr::tbl_df(filter(period, subject_ID == particip[ii], summary_type %in% c("first", "time_to_time")))
+    ds <- dplyr::tbl_df(filter(period, subject_ID == particip[ii], summary_type %in% c("sequential", "daily"))) #daily and sequential
 
 
     for (ll in 1 : nrow(ds)){
@@ -80,4 +80,6 @@ deagg <-  function(period){ #deaggregation
  df2$summary_duration_h <- lubridate::seconds_to_period(df2$summary_duration_h)
  df2
 }
+
+
 
