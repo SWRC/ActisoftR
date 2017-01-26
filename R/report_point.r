@@ -62,7 +62,6 @@ report_point <- function(period, acti_data, tz = "UTC",...){
     tab1 <- dplyr::filter(bypart, subject_ID == particip[ii])
     tab2 <- dplyr::filter(period, subject_ID == particip[ii])
 
-
     for (jj in 1 : nrow(tab2)){
       mat0 <- dplyr::filter(tab1, datime_end <= tab2$time_point_datime[jj])
       mat  <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
@@ -73,8 +72,7 @@ report_point <- function(period, acti_data, tz = "UTC",...){
       matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start)
 
       ex <- matex[matex$interval_type == "EXCLUDED",]
-
-      last_int <- matex[which(matex$datime_end == max(matex$datime_end)),]$interval_type
+      last_int <- ifelse(nrow(matex) > 0, matex[which(matex$datime_end == max(matex$datime_end)),]$interval_type, "null")
 
       mat <- tbl_df(mat)
 
@@ -100,9 +98,10 @@ report_point <- function(period, acti_data, tz = "UTC",...){
 
       report$Actisoft_ID <- y
       report$period_number <- jj
-      report$time_since_up <- difftime(tab2$time_point_datime[jj] , max(matex2$datime_end), units = "mins") #difftime(tab2$time_point_datime[jj] , mat2$datime_end[1], units = "mins" )
-      report$time_awake <- ifelse(last_int == "REST", difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA) #ifelse(nrow(ex) == 0, difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA)
-      report$last_rest_end <- max(matex2$datime_end) #mat2$datime_end[1]
+
+      report$time_since_up <- ifelse(nrow(matex) > 0, difftime(tab2$time_point_datime[jj] , max(matex2$datime_end), units = "mins"), NA) #difftime(tab2$time_point_datime[jj] , mat2$datime_end[1], units = "mins" )
+      report$time_awake <- ifelse(nrow(matex) > 0, ifelse(last_int == "REST", difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA), NA) #ifelse(nrow(ex) == 0, difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA)
+      report$last_rest_end <- ifelse(nrow(matex) > 0, max(matex2$datime_end), NA) #mat2$datime_end[1]
       report$last_sleep_end <- mat2$datime_end[2]
       report$point_overlap_bed <- mat4$point_overlap[1]
       report$point_overlap_sleep <- mat4$point_overlap[2]
@@ -144,5 +143,3 @@ report_point <- function(period, acti_data, tz = "UTC",...){
   report2 <- cbind(period, report2)
   tbl_df(report2)
 }
-
-
