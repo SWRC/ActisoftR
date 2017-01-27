@@ -13,8 +13,7 @@
 #'
 #'
 #' @examples
-#' # home.night.shade(x = flight, shadow.start = "22:00:00",
-#' # shadow.end = "08:00:00")
+#'#  home.night.shade(x = flight, shadow.start = "22:00:00",shadow.end = "08:00:00")
 
 #' @export
 #' @importFrom lubridate hours
