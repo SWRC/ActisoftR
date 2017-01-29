@@ -5,10 +5,11 @@
 #' @param local.shade if TRUE, it will draw in gray the local night period. FALSE by default.
 #' @param datebreaks is the distance between breaks in the x-axis. "12 hour" by default.
 #' @param acolor specifies the colors for the interval_type.
-#' @param decal is a parameter for shifting the start date
-#' @param export if TRUE, it will export the data as CSV
-#' @param ... optional parameters
-#' @return a plot
+#' @param decal is a parameter for shifting the start date.
+#' @param export if TRUE, it will export the data as CSV.
+#' @param base matches the participants at the same start date.
+#' @param ... optional parameters.
+#' @return a plot.
 #'
 #' @examples
 #' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
@@ -25,10 +26,10 @@
 #' flight <- flight[,-c(3,4)]
 #' colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
 #' flight <- tbl_df(flight)
-#' homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3), decal = c(0,0,5))
+#' homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
 #' head(flight)
 #' #plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, datebreaks = "12 hour")
-#' part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3), decal = c(0,0,5))
+#' part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
 #' plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, local.shade = TRUE, datebreaks = "12 hour")
 #'
 #' # Example # 3
@@ -45,6 +46,7 @@
 
 plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, ...){
   subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <- grayzone.end <- NULL
+
   #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
   #foo <- dplyr::mutate(foo, datime_start = as.POSIXct(foo$datime_start,tz = "UTC"), datime_end = as.POSIXct(foo$datime_end,tz = "UTC"))
@@ -134,7 +136,7 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
 
                    if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = as.POSIXct(shadow.start), #, tz = "UTC"
                                                                                    xmax = as.POSIXct(shadow.end), #, tz = "UTC"
-                                                                                   ymin = 0, ymax = Inf), alpha = 0.175, fill = "green") } + {
+                                                                                   ymin = 0, ymax = part+0.5), alpha = 0.175, fill = "green") } + {
                   if(local.shade == TRUE) geom_segment(data = local.night.shade(x = x, part_homeTZ = part_homeTZ),
                                                        aes(colour = interval_type, x = as.POSIXct(grayzone.start,tz = "UTC"), #ymd_hms
                                                            xend = as.POSIXct(grayzone.end,tz = "UTC"),
@@ -145,7 +147,7 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
     theme_classic() +
 scale_color_manual(values = acolor) +
     scale_fill_manual(name = "Act")
-
+#else {part_homeTZ = NULL}
   # resizing the plotting area
   x11() #dev.new()
   resize.win <- function(Width = 12, Height = 5){dev.off();
@@ -172,7 +174,7 @@ scale_color_manual(values = acolor) +
 
 #' Plots SLEEP intervals.
 #'
-#' @param x a dataframe.
+#' @param dat a dataframe.
 #' @param acolor the color of the lines
 #' @param ... Optional parameters
 #' @return a plot
@@ -200,6 +202,9 @@ scale_color_manual(values = acolor) +
 #' @rdname plot_long
 
 plot_long <- function(dat, acolor,...){
+
+  sinceMidnight_end <- sinceMidnight_start <- interval_type <- NULL
+
   ###############################################
   # Filename: plot_long.R
   # Purpose:  Plot sleep and wake data (long)
@@ -263,8 +268,8 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
     panel.grid.major.x = element_blank(), # no grids
     panel.grid.minor.x = element_blank(), # no grids
     plot.margin = unit(c(5.5, 12.5, 5.5, 5.5), "points"),
-    axis.title.y = element_text(size = 10, colour = "black", face = "bold", margin = margin(0, 0, 0, 0, unit = "points")), # make x axis title pretty
-    axis.title.x = element_text(size = 10, colour = "black", face = "bold", margin = margin(10, 0, 0, 0, unit = "points")), # make x axis title pretty
+    axis.title.y = element_text(size = 10, colour = "black", face = "bold", margin = margin(0, 0, 0, 0, unit = "points")),
+    axis.title.x = element_text(size = 10, colour = "black", face = "bold", margin = margin(10, 0, 0, 0, unit = "points")),
     axis.text  = element_text(size = 10, colour = "black", face = "bold")) # make y axis text pretty
 
   x11()
