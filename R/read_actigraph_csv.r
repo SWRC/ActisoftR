@@ -21,7 +21,7 @@
 
 
 read_actigraph_csv <- function(x = "EXAMPLE_DATA", ...){
-  
+interval_type <- NULL
 if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
       dir.exists(paths = paste(x,"//Actiware", sep = "")) == FALSE){ # for different files in a single folder
     files0 <- list.files( path = x, pattern = "*.csv") # list all the csv files
