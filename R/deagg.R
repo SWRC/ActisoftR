@@ -22,8 +22,8 @@
 #'
 #'
 deagg <-  function(period){ #deaggregation
+  df <- d2 <- particip <- ds0 <- ds <- matr <- df2 <- subject_ID <- summary_type <- NULL
 
-  df <- d2 <- particip <- ds0 <- ds <- matr <- df2 <- NULL
   period <- tbl_df(period)
   #period$summary_duration_h <- lubridate::hours(period$summary_duration_h)
 
