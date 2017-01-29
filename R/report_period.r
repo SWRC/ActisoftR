@@ -72,6 +72,7 @@
 #' @importFrom lubridate dmy_hm dmy_hms ymd_hms days
 
 report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC",...){
+  with_tz <- summary_type <- subject_ID <- duration_adj <- sleep_time_adj <- NULL
   period <- with_tz(period, tz = tz)
   period <- tbl_df(period)
   actigraphy_file <- analysis_name <- interval_type <- exact3 <- duration <- sleep_time <- efficiency <- art <- NULL
