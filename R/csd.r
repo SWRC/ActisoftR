@@ -37,6 +37,7 @@
 #' @import ggplot2
 #'
 csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
+  cumsum_reset <- def <- subject_ID <- period_number <- NULL
   x <- x[x$with_excluded_bad == FALSE,]
   x <- x %>% left_join(baseline_sleep, by = "subject_ID")
   x$def <- x$total_sleep - x$baseline_sleep
