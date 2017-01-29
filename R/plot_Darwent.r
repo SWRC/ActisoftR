@@ -137,10 +137,11 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
                    if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = as.POSIXct(shadow.start), #, tz = "UTC"
                                                                                    xmax = as.POSIXct(shadow.end), #, tz = "UTC"
                                                                                    ymin = 0, ymax = part+0.5), alpha = 0.175, fill = "green") } + {
-                  if(local.shade == TRUE) geom_segment(data = local.night.shade(x = x, part_homeTZ = part_homeTZ),
+                  if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = x, part_homeTZ = part_homeTZ),
                                                        aes(colour = interval_type, x = as.POSIXct(grayzone.start,tz = "UTC"), #ymd_hms
                                                            xend = as.POSIXct(grayzone.end,tz = "UTC"),
-                                                           y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)} +
+                                                           y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
+                                                                                     else part_homeTZ <- NULL} +
     theme_bw() +
     xlab("Date-Time") +
     ylab("Participant(s)") +
