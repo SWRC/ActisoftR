@@ -13,6 +13,7 @@
 #' @importFrom lubridate ymd_hms
 #'
 int_startend <- function(x, ...){
+  subject_ID <- summary_start_datime <- summary_end_datime <- NULL
 # starting datime
   use <- c("subject_ID", "summary_start_datime", "summary_end_datime")
   use2 <- c("summary_start_datime", "summary_end_datime")
