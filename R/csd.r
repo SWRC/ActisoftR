@@ -5,6 +5,7 @@
 #' @param reset consecutive number of sleep periods that will set as zero the cumulative sleep debt when the total sleep in 24h is greater than the baseline_sleep.
 #' It does not depend on the exceeding duration or credit.
 #' @param plot a logical variable. By default is TRUE.
+#' @param ... optional parameters
 #'
 #' @return a data frame and optionally a graph. def is the daily sleep deficiency.
 #'
