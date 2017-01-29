@@ -59,6 +59,7 @@ portion <- function(x, from , to , ...){ #all = TRUE,
 
 # Slice a data.frame with overlaps
 portion_withoverlaps <- function(x, from , to , ...){
+  int <- NULL
   x <- tbl_df(x)
   x$int <- lubridate::interval(x$datime_start,x$datime_end)
   part <- as.vector(unique(x$subject_ID))
