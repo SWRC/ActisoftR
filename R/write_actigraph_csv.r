@@ -1,6 +1,7 @@
 #' Exports data as CSV.
 #'
 #' @param x the file path
+#' @param path is the path for saving the file
 #' @param ... Optional parameters
 #' @return a dataframe
 #' @export
@@ -8,7 +9,7 @@
 #' @importFrom data.table rbindlist setnames setattr
 #' @importFrom tibble add_column
 #' @importFrom magrittr %>%
-#' @importFrom utils read.csv
+#' @importFrom utils read.csv write.csv
 #'
 #' @examples
 #' x <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
