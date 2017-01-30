@@ -36,6 +36,7 @@
 
 
 report_point <- function(period, acti_data, tz = "UTC",...){
+
   with_tz <- subject_ID <- interval_type <- datime_end <- NULL
   period <- with_tz(period, tz = tz)
   particip <- as.vector(t(distinct(period, subject_ID)))
@@ -73,7 +74,7 @@ report_point <- function(period, acti_data, tz = "UTC",...){
       matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start)
 
       ex <- matex[matex$interval_type == "EXCLUDED",]
-      last_int <- ifelse(nrow(matex) > 0, matex[which(matex$datime_end == max(matex$datime_end)),]$interval_type, "null")
+      last_int <- ifelse(nrow(matex) > 0, as.character(matex[which(matex$datime_end == max(matex$datime_end)),]$interval_type), "null")
 
       mat <- tbl_df(mat)
 
@@ -102,7 +103,7 @@ report_point <- function(period, acti_data, tz = "UTC",...){
 
       report$time_since_up <- ifelse(nrow(matex) > 0, difftime(tab2$time_point_datime[jj] , max(matex2$datime_end), units = "mins"), NA) #difftime(tab2$time_point_datime[jj] , mat2$datime_end[1], units = "mins" )
       report$time_awake <- ifelse(nrow(matex) > 0, ifelse(last_int == "REST", difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA), NA) #ifelse(nrow(ex) == 0, difftime(tab2$time_point_datime[jj] , mat2$datime_end[2], units = "mins" ), NA)
-      report$last_rest_end <- ifelse(nrow(matex) > 0, max(matex2$datime_end), NA) #mat2$datime_end[1]
+      report$last_rest_end <- as.POSIXct(ifelse(nrow(matex) > 0, max(matex2$datime_end), NA), origin = "1970-01-01", tz = tz) #mat2$datime_end[1]
       report$last_sleep_end <- mat2$datime_end[2]
       report$point_overlap_bed <- mat4$point_overlap[1]
       report$point_overlap_sleep <- mat4$point_overlap[2]
@@ -130,9 +131,9 @@ report_point <- function(period, acti_data, tz = "UTC",...){
       if(rem == TRUE){ # For Actiwatch, removing sleep period with Excluded
         report$with_excluded_bad <- TRUE}
 
-      report$with_forced_sleep <- ifelse(nrow(acti_data[acti_data$interval_type == "FORCED SLEEP",]) > 0, TRUE, FALSE)
-      report$with_forced_wake <- ifelse(nrow(acti_data[acti_data$interval_type == "FORCED WAKE",]) > 0, TRUE, FALSE)
-      report$with_custom_interval <- ifelse(nrow(acti_data[acti_data$interval_type == "CUSTOM",]) > 0, TRUE, FALSE)
+      report$with_forced_sleep <- ifelse(nrow(tab1_sec[tab1_sec$interval_type == "FORCED SLEEP",]) > 0, TRUE, FALSE)
+      report$with_forced_wake <- ifelse(nrow(tab1_sec[tab1_sec$interval_type == "FORCED WAKE",]) > 0, TRUE, FALSE)
+      report$with_custom_interval <- ifelse(nrow(tab1_sec[tab1_sec$interval_type == "CUSTOM",]) > 0, TRUE, FALSE)
 
 
       report2 <- rbind(report2, report)
@@ -144,3 +145,4 @@ report_point <- function(period, acti_data, tz = "UTC",...){
   report2 <- cbind(period, report2)
   tbl_df(report2)
 }
+
