@@ -32,7 +32,7 @@
 
 #' @export
 #' @importFrom dplyr filter mutate summarise n
-#' @importFrom lubridate dmy_hm dmy_hms ymd_hms days
+#' @importFrom lubridate dmy_hm dmy_hms ymd_hms days with_tz
 
 
 report_point <- function(period, acti_data, tz = "UTC",...){
