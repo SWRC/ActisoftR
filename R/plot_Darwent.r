@@ -56,7 +56,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 
   #part <- nrow(distinct(x,x$subject_ID)) # number of participants. It defines the height of the plot
   part <- length(unique(x$subject_ID))
-  participant <- unique(x$subject_ID)
+  participant <- as.factor(unique(x$subject_ID))
   participant <- droplevels(participant)
 
   if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0,part))}
@@ -91,6 +91,7 @@ if(base == "TRUE"){ # matching the participants at the same start date
   foo3$datime_end <- foo3$adj2
 
   foo3 <- droplevels(foo3)
+  foo3$subject_ID <- as.factor(foo3$subject_ID)
 
   foo4 <- foo3 %>% left_join(decal, by = "subject_ID")
   foo4$decal <- foo4$dec * 60*60*24
