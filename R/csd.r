@@ -67,10 +67,16 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
       out$cumsum_reset <- ifelse(j > reset, ifelse( all(tab$def[(j - reset + 1) : j] > 0) , 0, tab$cumsum_reset[j - 1] + tab$def[j]), out$cumsum)
       #out$cumsum_reset <- ifelse(j > reset, ifelse(sum(tab$def[(j - reset + 1) : j]) == 0, 0, tab$cumsum_reset[j - 1] + tab$def[j]), tab$cumsum[j])
       out2 <- rbind(out2, out)
-    }
+
+      }
   }
-  out2
- p <- ggplot2::ggplot(data = out2, aes(colour = subject_ID, x = period_number, y = cumsum_reset,
+
+  out3 <- data.frame(subject_ID = particip, period_number = rep(0, length(particip)), total_sleep = rep(NA, length(particip))
+                     , baseline_sleep = rep(NA, length(particip)), def = rep(0, length(particip)), cumsum = rep(0, length(particip))
+                     , cumsum_reset = rep(0, length(particip)))
+  out3 <- rbind(out2, out3)
+
+ p <- ggplot2::ggplot(data = out3, aes(colour = subject_ID, x = period_number, y = cumsum_reset,
                           group = subject_ID)) +
     geom_line() +
     xlab("Period number") +
@@ -83,4 +89,5 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
   }
   else return(out2)
 }
+
 
