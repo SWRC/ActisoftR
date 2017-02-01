@@ -5,7 +5,7 @@
 #' @param tz the time zone.
 #' @param interv interval of time, set as 10min.
 #' @param datebreaks is the distance between breaks in the x-axis. "2 hour" by default.
-
+#' @param work_data optional parameter used to import work data.
 #' @return a plot.
 #'
 #' @examples
@@ -25,11 +25,12 @@
 #' @importFrom grDevices dev.new dev.off x11 windows
 #' @importFrom dplyr distinct left_join
 #' @importFrom scales date_breaks date_format
+#' @importFrom methods hasArg
 #' @import ggplot2
 
 
 sheep_counter <- function(dat, tz = "UTC", interv = "10 mins", datebreaks = "2 hour", work_data ){
-  tab <- NULL
+  tab <- freq <- prop <- interval_type <- NULL
   tab2 <- rep(0, 60 * 24 / as.numeric(gsub("([0-9]*).*","\\1",interv)) )
 
   dat$datime_start <- as.POSIXct(dat$datime_start , format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
@@ -94,4 +95,3 @@ sheep_counter <- function(dat, tz = "UTC", interv = "10 mins", datebreaks = "2 h
     ylab("proportion")
 
 }
-
