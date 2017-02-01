@@ -16,7 +16,8 @@ Imports: ggplot2,
     tibble,
     lubridate,
     data.table,
-    magrittr
+    magrittr,
+    methods
 Suggests:
     DT,
     Rcpp,
@@ -32,3 +33,4 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 5.0.1
 VignetteBuilder: knitr
+
