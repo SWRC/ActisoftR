@@ -190,22 +190,22 @@ mat2 = NULL
       y <- y +  1
 
       if (remove_bad == TRUE){
-      if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period is partially scored as Bad
-        report$number_of_rests_exact <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <-
-        report$longest_sleep_period <- report$shortest_sleep_period <- NA
-        report$with_excluded_bad <- TRUE
-      }
+        if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period is partially scored as Bad
+          report$number_of_rests_exact <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <-
+          report$longest_sleep_period <- report$shortest_sleep_period <- NA
+          report$with_excluded_bad <- TRUE
+        }
 
-      if(rem == TRUE){ # For Actiwatch, removing sleep period with Excluded
-         report$sleep_efficiency <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <-
-        report$longest_sleep_period <- report$shortest_sleep_period <- NA
-        report$with_excluded_bad <- TRUE
+        if(rem == TRUE){ # For Actiwatch, removing sleep period with Excluded
+           report$sleep_efficiency <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <-
+          report$longest_sleep_period <- report$shortest_sleep_period <- NA
+          report$with_excluded_bad <- TRUE
 
-#if(nrow(ex) == nrow(mat)){print(y); print(ii); print(jj); print(mat)}
-      report$number_of_rests_exact <- ifelse(nrow(ex) == nrow(mat), nrow(ex), NA)
-      report$number_of_sleeps <- ifelse(nrow(ex) == nrow(mat), NA, report$number_of_sleeps)
-      report$number_of_sleeps_exact <- ifelse(nrow(ex) == nrow(mat), NA, report$number_of_sleeps_exact)
-      }
+  #if(nrow(ex) == nrow(mat)){print(y); print(ii); print(jj); print(mat)}
+        report$number_of_rests_exact <- ifelse(nrow(ex) == nrow(mat), nrow(ex), report$number_of_rests_exact)
+        report$number_of_sleeps <- ifelse(nrow(ex) == nrow(mat), NA, report$number_of_sleeps)
+        report$number_of_sleeps_exact <- ifelse(nrow(ex) == nrow(mat), NA, report$number_of_sleeps_exact)
+        }
       }
 
       report$with_forced_sleep <- ifelse(nrow(mat0[mat0$interval_type == "FORCED SLEEP",]) > 0, TRUE, FALSE)
@@ -226,5 +226,8 @@ mat2 = NULL
 
   report2
 }
+
+
+
 
 
