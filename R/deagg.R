@@ -45,6 +45,7 @@ deagg <-  function(period){ #deaggregation
     ds0 <- dplyr::tbl_df(filter(period, subject_ID == particip[ii], summary_type %in% c("first", "time_to_time")))
     ds <- dplyr::tbl_df(filter(period, subject_ID == particip[ii], summary_type %in% c("sequential", "daily"))) #daily and sequential
 
+  if(nrow(ds) > 0){
     for (ll in 1 : nrow(ds)){
       dsl <- ds[ll,]
 
@@ -63,7 +64,7 @@ deagg <-  function(period){ #deaggregation
           }
       else matr <- rbind(matr, dsl)
       }
-
+    }
     df <- dplyr::bind_rows(ds0, matr, df)
 
   }
@@ -72,3 +73,4 @@ deagg <-  function(period){ #deaggregation
  df$summary_duration_h <- df$summary_duration_h/3600
  df
 }
+
