@@ -1,3 +1,4 @@
+
 #' Generates reports based on input periods.
 #'
 #'
@@ -93,6 +94,8 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC",...){
   acti_data$datime_end <- ymd_hms(acti_data$datime_end)
   acti_data <- with_tz(acti_data, tz = tz)
 
+  #acti_data$duration <- acti_data$duration
+
 #acti_data <- tbl_df(filter(acti_data, analysis_name %in% particip, interval_type %in% c("REST", "SLEEP")))
 acti_data <- tbl_df(filter(acti_data, subject_ID %in% particip, interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM")))
 
@@ -116,10 +119,11 @@ acti_data <- tbl_df(filter(acti_data, subject_ID %in% particip, interval_type %i
       if(row$summary_start_datime > row$summary_end_datime) { art <- row$summary_start_datime; row$summary_start_datime <-
         row$summary_end_datime; row$summary_end_datime <- art }
       report <- data.frame(matrix(vector(), nrow=1, length(colName), dimnames = list(c(), colName)), stringsAsFactors = F)
-      mat0 <- portion_withoverlaps(tab1_sec, from = row$summary_start_datime,  to = row$summary_end_datime)
-      mat <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
+      mat <- portion_withoverlaps(tab1_sec, from = row$summary_start_datime,  to = row$summary_end_datime)
 
-      ex <- mat0[mat0$interval_type == "EXCLUDED",]
+      mat[mat$interval_type == "EXCLUDED",]$duration <- as.numeric(difftime(mat[mat$interval_type == "EXCLUDED",]$datime_end, mat[mat$interval_type == "EXCLUDED",]$datime_start, units = "mins"))
+
+      ex <- mat[mat$interval_type == "EXCLUDED",]
 
       # to do: adapt for cases with more than two EXLUDED periods
       rem = FALSE
@@ -132,20 +136,33 @@ acti_data <- tbl_df(filter(acti_data, subject_ID %in% particip, interval_type %i
         rem = TRUE
         }
 
-      matex <- dplyr::filter(mat0, interval_type %in% c("REST", "EXCLUDED"))
-      matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start)
-
       # I need to check this
-      mat$exact1 <- ifelse(mat$datime_start < row$summary_start_datime, 1 - ((row$summary_start_datime - mat$datime_start) / mat$duration), 1)
-      mat$exact2 <- ifelse(mat$datime_end > row$summary_end_datime, ((row$summary_end_datime - mat$datime_start ) / mat$duration), 1)
+      mat$exact1 <- ifelse(mat$datime_start < row$summary_start_datime, 1 - (((as.numeric(difftime(row$summary_start_datime, mat$datime_start, units = "mins")))) / mat$duration), 1)#row$summary_start_datime - mat$datime_start
+      mat$exact2 <- ifelse(mat$datime_end > row$summary_end_datime, (((as.numeric(difftime(row$summary_end_datime, mat$datime_start, units = "mins") ) )) / mat$duration), 1) #row$summary_end_datime - mat$datime_start
       mat$exact3 <-  mat$exact1 + mat$exact2 - 1
-
       mat$duration_adj <- mat$exact3 * mat$duration
       mat$sleep_time_adj <- mat$exact3 * mat$sleep_time
-
       mat$efficiency <- as.numeric(as.character(mat$efficiency))
 
-      mat2 <-  mat %>%
+      matex <- dplyr::filter(mat, interval_type %in% c("REST", "EXCLUDED"))
+      mat0 <- dplyr::filter(mat, interval_type %in% c("REST", "SLEEP"))
+
+
+      if(nrow(mat0) > 0){
+        byint2 <- NULL
+        inu <- unique(dplyr::filter(mat0, interval_type %in% c("REST"))$interval_number)
+        for (k in 1 : length(inu)){
+          byint <- dplyr::filter(mat0, interval_number == inu[k])
+          byint[byint$interval_type == "REST",]$efficiency <- ifelse( nrow(byint[byint$interval_type == "SLEEP",]) > 0,
+                                                                      byint[byint$interval_type == "SLEEP",]$efficiency, NA )
+          byint2 <- rbind(byint2, byint)
+        }
+      mat0 <- byint2
+      }
+
+
+mat2 = NULL
+      mat2 <-  mat0 %>%
         group_by(interval_type) %>%
         summarise(interval_number = n(),
                   number_exact = sum(as.numeric(exact3)),
@@ -163,9 +180,10 @@ acti_data <- tbl_df(filter(acti_data, subject_ID %in% particip, interval_type %i
       report$number_of_sleeps_exact <- as.numeric(mat2$number_exact[2])
       report$number_of_rests <-  nrow(matex) # mat2$interval_number[1]
       report$number_of_sleeps <- mat2$interval_number[2]
-      report$total_time_in_bed <- sum(matex$duration) #mat2$Duration[1] + sum(ex$duration)
+      report$total_time_in_bed <- as.numeric(sum(matex$duration_adj)) #sum(matex$duration) #mat2$Duration[1] + sum(ex$duration)
       report$total_sleep <- mat2$Sleep_time[2]
-      report$sleep_efficiency <- ifelse(mat$actigraph_brand[1] == "AMI", round(mat2$sleep_efficiency[1],2), round(mat2$sleep_efficiency[2],2) )
+      # when merging that efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
+      report$sleep_efficiency <- round(mat2$sleep_efficiency[1],2) #ifelse(mat$actigraph_brand[1] == "AMI", round(mat2$sleep_efficiency[1],2), round(mat2$sleep_efficiency[2],2) )
       report$longest_sleep_period <- mat2$longest_period[2]
       report$shortest_sleep_period <- mat2$shortest_period[2]
       report$with_excluded_bad <- FALSE
@@ -179,12 +197,16 @@ acti_data <- tbl_df(filter(acti_data, subject_ID %in% particip, interval_type %i
       }
 
       if(rem == TRUE){ # For Actiwatch, removing sleep period with Excluded
-        report$number_of_rests_exact <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <-
+         report$sleep_efficiency <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <-
         report$longest_sleep_period <- report$shortest_sleep_period <- NA
         report$with_excluded_bad <- TRUE
-      }
-      }
 
+#if(nrow(ex) == nrow(mat)){print(y); print(ii); print(jj); print(mat)}
+      report$number_of_rests_exact <- ifelse(nrow(ex) == nrow(mat), nrow(ex), NA)
+      report$number_of_sleeps <- ifelse(nrow(ex) == nrow(mat), NA, report$number_of_sleeps)
+      report$number_of_sleeps_exact <- ifelse(nrow(ex) == nrow(mat), NA, report$number_of_sleeps_exact)
+      }
+      }
 
       report$with_forced_sleep <- ifelse(nrow(mat0[mat0$interval_type == "FORCED SLEEP",]) > 0, TRUE, FALSE)
       report$with_forced_wake <- ifelse(nrow(mat0[mat0$interval_type == "FORCED WAKE",]) > 0, TRUE, FALSE)
