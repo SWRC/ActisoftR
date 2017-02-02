@@ -38,11 +38,12 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
       if ( any(colnames(one) == "ID") == FALSE  && any(colnames(one) == "analysis_name") == FALSE){
         print("there is at least a file that is not of the from AMI or Actiware in the folder. File(s) where not
               imported")
-        }
       }
+      }
+
 }
-  
-  files <- list.files( path = paste(x,"\\Actiware", sep=""), pattern = "*.csv") # list all the csv files
+
+    files <- list.files( path = paste(x,"\\Actiware", sep=""), pattern = "*.csv") # list all the csv files
 
   if (length(files) > 0){
   #dat <- do.call(rbind, lapply(paste("EXAMPLE_DATA\\Actiware\\", files, sep = ""), function(x) read.csv(x, sep = ",", header = TRUE, skip = 0)))
@@ -117,25 +118,28 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
   alldata$interval_type[alldata$interval_type == "O - O"] <- as.factor("SLEEP")
   alldata$interval_type[alldata$interval_type == "Up"] <- as.factor("ACTIVE")
 
-  alldata$sleep_time[alldata$interval_type == "REST"] <- NA
-  alldata$sleep_time[alldata$interval_type == "ACTIVE"] <- NA
-    
+alldata$sleep_time[alldata$interval_type == "REST"] <- NA
+alldata$sleep_time[alldata$interval_type == "ACTIVE"] <- NA
+
+alldata$efficiency[which(alldata$efficiency == ".") ] <- NA
+alldata$efficiency <- as.numeric(as.character(alldata$efficiency))
+
   alldata$sleep_time <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$sleep_time)
-  alldata$efficiency <- as.numeric(as.character(alldata$efficiency))
   alldata$efficiency <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$efficiency)
+
   #alldata2 <- alldata %>%
   #  dplyr::group_by(interval_number, start_date, start_time, duration) %>%
   #  dplyr::filter_(all(interval_type != "24-Hr")) # removing intervals = "24-Hr"
 
   alldata2 <- alldata[alldata$interval_type != "24-Hr", ]
-  
+
   alldata2 <- alldata2[!is.na(alldata2$datime_start),]
   alldata2 <- alldata2[!is.na(alldata2$datime_end),]
-        
+
+  alldata2[alldata2$duration != ".", ]
+
   alldata2 <- droplevels(alldata2)
 
   alldata2
   }
-
-
 
