@@ -71,7 +71,7 @@ report_point <- function(period, acti_data, tz = "UTC",...){
       tab1_sec <- portion_withoverlaps (mat0, from = tab2$time_point_datime[jj] - lubridate::hours(24) ,  to = tab2$time_point_datime[jj] )
 
       matex <- dplyr::filter(tab1_sec, interval_type %in% c("REST", "EXCLUDED"))
-      matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start)
+      matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start, units = "mins")
 
       ex <- matex[matex$interval_type == "EXCLUDED",]
       last_int <- ifelse(nrow(matex) > 0, as.character(matex[which(matex$datime_end == max(matex$datime_end)),]$interval_type), "null")
@@ -89,13 +89,15 @@ report_point <- function(period, acti_data, tz = "UTC",...){
         summarise(datime_end  = max(datime_end)
         )
 
-
-
       mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datime[jj])) #, interval_type %in% c("REST", "SLEEP")
+
+      mat3$po <- ifelse(mat3$datime_end >= tab2$time_point_datime[jj],ifelse(mat3$datime_start <= tab2$time_point_datime[jj], TRUE , FALSE) , FALSE)
+
+
       mat4 <- mat3 %>%
         group_by(interval_type) %>%
-        summarise(datime_end  = max(datime_end),
-                  point_overlap = ifelse(datime_end >= tab2$time_point_datime[jj], TRUE, FALSE)
+        summarise(#datime_end  = max(datime_end),
+                  point_overlap = ifelse(any(po) == TRUE, TRUE, FALSE)
         )
 
       report$Actisoft_ID <- y
@@ -145,4 +147,3 @@ report_point <- function(period, acti_data, tz = "UTC",...){
   report2 <- cbind(period, report2)
   tbl_df(report2)
 }
-
