@@ -18,6 +18,7 @@
 #' @importFrom dplyr tbl_df filter
 #'
 portion <- function(x, from , to , ...){ #all = TRUE,
+  int <- NULL
   x <- tbl_df(x)
   part <- length(unique(x$subject_ID))
   #part <- as.matrix (distinct(x, x$subject_ID) ) #participant
@@ -79,4 +80,3 @@ portion_withoverlaps <- function(x, from , to , ...){
   }
   mat2
 }
-
