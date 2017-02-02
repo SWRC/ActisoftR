@@ -129,6 +129,9 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
 
   alldata2 <- alldata[alldata$interval_type != "24-Hr", ]
   
+  alldata2 <- alldata2[!is.na(alldata2$datime_start),]
+  alldata2 <- alldata2[!is.na(alldata2$datime_end),]
+        
   alldata2 <- droplevels(alldata2)
 
   alldata2
