@@ -49,6 +49,8 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 
   #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
+  foo <- foo[!is.na(foo$datime_start),]
+  foo <- foo[!is.na(foo$datime_end),]
   #foo <- dplyr::mutate(foo, datime_start = as.POSIXct(foo$datime_start,tz = "UTC"), datime_end = as.POSIXct(foo$datime_end,tz = "UTC"))
 
   foo$datime_start <- as.POSIXct(foo$datime_start, tz = "UTC")
