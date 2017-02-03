@@ -59,12 +59,13 @@ report_point <- function(period, acti_data, tz = "UTC",...){
   report$last_sleep_end <- as.POSIXct((report$last_sleep_end))
 
   y <- 1
-  report2 = NULL
+  report1 <- report2 <- NULL
   for (ii in 1 : length(particip)){
     tab1 <- dplyr::filter(bypart, subject_ID == particip[ii])
     tab2 <- dplyr::filter(period, subject_ID == particip[ii])
 
     for (jj in 1 : nrow(tab2)){
+
       mat0 <- dplyr::filter(tab1, datime_end <= tab2$time_point_datime[jj])
       mat  <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
 
@@ -137,13 +138,15 @@ report_point <- function(period, acti_data, tz = "UTC",...){
       report$with_forced_wake <- ifelse(nrow(tab1_sec[tab1_sec$interval_type == "FORCED WAKE",]) > 0, TRUE, FALSE)
       report$with_custom_interval <- ifelse(nrow(tab1_sec[tab1_sec$interval_type == "CUSTOM",]) > 0, TRUE, FALSE)
 
-
-      report2 <- rbind(report2, report)
+      report1 <- cbind(tab2[jj,], report)
+      report2 <- rbind(report1, report2)
       y <- y +  1
-    }
+
+      }
 
   }
 
-  report2 <- cbind(period, report2)
+
   tbl_df(report2)
 }
+
