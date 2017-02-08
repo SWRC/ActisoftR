@@ -13,6 +13,8 @@
 #' In that case all summary estimates except ‘time in bed’ will be set to NA,
 #' and the column ‘with_excluded_bad’ will show TRUE. See examples in the Vignettes.
 #' This can be avoided using remove_bad = FALSE.
+#' Sleep efficiency will be zero when there is an attempt to sleep (no sleep achieved in the period) within a rest.
+#' However, the sleep efficiency will be NA when there is not REST or SLEEP with in an interval of time.
 #'
 #' @examples
 #'# Example 1
@@ -216,16 +218,26 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC",...){
       }
 
 # when there's a rest period without sleep AND no excluded or bad period, then total_sleep = sleep_efficiency = 0
-if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) > 0){
-  if(rem == FALSE){
-    if( all(is.na( filter(mat0, interval_type == "SLEEP")$datime_start)) == TRUE){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <- report$sleep_efficiency <- 0}
+if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) > 0){ # if there's at least one sleep
+  if(rem == FALSE){ # if no excluded
+    if( all(is.na( filter(mat0, interval_type == "SLEEP")$datime_start)) == TRUE){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
 
-    if( all( filter(mat0, interval_type == "SLEEP")$duration == 0)){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <- report$sleep_efficiency <- 0}
+    if( all( filter(mat0, interval_type == "SLEEP")$duration == 0)){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
   }
 
-  if (remove_bad == FALSE){ if(mat0$duration == 0){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <- report$sleep_efficiency <- 0} }
+  if (remove_bad == FALSE){ # no bad period
+    if(mat0$duration == 0){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <- report$sleep_efficiency <- 0} }
   }
-      #all(is.na(c(NA, NaN))
+
+
+if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) == 0){ # if no sleep or rest with in the interval
+  if(rem == FALSE){ # if no excluded
+    report$sleep_efficiency <- NA
+    report$number_of_sleeps <- report$number_of_rests <- report$number_of_sleeps_exact <- report$number_of_rests_exact <- report$total_time_in_bed <- report$total_sleep <- report$shortest_sleep_period <- report$longest_sleep_period <- 0
+  }
+}
+
+        #all(is.na(c(NA, NaN))
 #if(nrow(byint[byint$interval_type == "SLEEP",]) > 0){   }
 
       report$with_forced_sleep <- ifelse(nrow(mat0[mat0$interval_type == "FORCED SLEEP",]) > 0, TRUE, FALSE)
@@ -247,3 +259,4 @@ if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) > 0){
 
   report2
 }
+
