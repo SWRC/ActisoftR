@@ -12,14 +12,14 @@
 #' @importFrom magrittr %>%
 #' @importFrom lubridate ymd_hms
 #'
-int_startend <- function(x, ...){
+int_startend <- function(x, tz = "UTC", ...){
   subject_ID <- summary_start_datime <- summary_end_datime <- NULL
 # starting datime
   use <- c("subject_ID", "summary_start_datime", "summary_end_datime")
   use2 <- c("summary_start_datime", "summary_end_datime")
   y <- x[, use]
-mini <- as.POSIXct(apply(y[,use2], 1, min))#lubridate::ymd_hms(apply(y[,use2], 1, min))
-maxi <- as.POSIXct(apply(y[,use2], 1, max))#lubridate::ymd_hms(apply(y[,use2], 1, max))
+mini <- as.POSIXct(apply(y[,use2], 1, min), tz = tz)#lubridate::ymd_hms(apply(y[,use2], 1, min))
+maxi <- as.POSIXct(apply(y[,use2], 1, max), tz = tz)#lubridate::ymd_hms(apply(y[,use2], 1, max))
 y$summary_start_datime <- mini
 y$summary_end_datime <- maxi
 
