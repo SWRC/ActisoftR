@@ -222,7 +222,7 @@ if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) > 0){ # if there's at lea
   if(rem == FALSE){ # if no excluded
     if( all(is.na( filter(mat0, interval_type == "SLEEP")$datime_start)) == TRUE){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
 
-    if( all( filter(mat0, interval_type == "SLEEP")$duration == 0)){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
+    #if( all( filter(mat0, interval_type == "SLEEP")$duration == 0)){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
   }
 
   if (remove_bad == FALSE){ # no bad period
@@ -259,4 +259,3 @@ if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) == 0){ # if no sleep or r
 
   report2
 }
-
