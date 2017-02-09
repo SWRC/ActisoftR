@@ -69,7 +69,7 @@ report_point <- function(period, acti_data, tz = "UTC",...){
       mat0 <- dplyr::filter(tab1, datime_end <= tab2$time_point_datime[jj])
       mat  <- dplyr::filter(mat0, interval_type %in% c("REST", "SLEEP"))
 
-      tab1_sec <- portion_withoverlaps (mat0, from = tab2$time_point_datime[jj] - lubridate::hours(24) ,  to = tab2$time_point_datime[jj] )
+      tab1_sec <- portion_withoverlaps (mat0, from = tab2$time_point_datime[jj] - lubridate::hours(48) ,  to = tab2$time_point_datime[jj] )
 
       matex <- dplyr::filter(tab1_sec, interval_type %in% c("REST", "EXCLUDED"))
       matex[matex$interval_type == "EXCLUDED",]$duration <- difftime(matex[matex$interval_type == "EXCLUDED",]$datime_end, matex[matex$interval_type == "EXCLUDED",]$datime_start, units = "mins")
@@ -149,4 +149,3 @@ report_point <- function(period, acti_data, tz = "UTC",...){
 
   tbl_df(report2)
 }
-
