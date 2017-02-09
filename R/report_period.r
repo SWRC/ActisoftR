@@ -219,14 +219,14 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC",...){
 
 # when there's a rest period without sleep AND no excluded or bad period, then total_sleep = sleep_efficiency = 0
 if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) > 0){ # if there's at least one sleep
-  if(rem == FALSE){ # if no excluded
+  if(rem == FALSE && all(mat0$actigraph_brand == "Actiware")){ # if no excluded
     if( all(is.na( filter(mat0, interval_type == "SLEEP")$datime_start)) == TRUE){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
 
     #if( all( filter(mat0, interval_type == "SLEEP")$duration == 0)){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
   }
-
-  if (remove_bad == FALSE){ # no bad period
-    if(mat0$duration == 0){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <- report$sleep_efficiency <- 0} }
+#remove_bad == FALSE
+  if (sum(mat$bad, na.rm = TRUE) == 0 && all(mat0$actigraph_brand == "AMI")){ # no bad period and actigraph = AMI
+    if(all(filter(mat0, interval_type == "SLEEP")$duration == 0)){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <- report$sleep_efficiency <- 0} }
   }
 
 
