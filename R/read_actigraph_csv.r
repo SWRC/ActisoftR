@@ -113,6 +113,9 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
   alldata$datime_start <- paste( as.POSIXct( strptime( alldata$start_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$start_time)
   alldata$datime_end   <- paste( as.POSIXct( strptime( alldata$end_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$end_time)
 
+  alldata$datime_start[which(alldata$datime_start == "NA NA")] <- NA
+  alldata$datime_end[which(alldata$datime_end == "NA NA")] <- NA
+
   # standardizing the interval_type
   alldata$interval_type[alldata$interval_type == "Down"] <- as.factor("REST")
   alldata$interval_type[alldata$interval_type == "O - O"] <- as.factor("SLEEP")
@@ -133,10 +136,10 @@ alldata$efficiency <- as.numeric(as.character(alldata$efficiency))
 
   alldata2 <- alldata[alldata$interval_type != "24-Hr", ]
 
-  alldata2 <- alldata2[!is.na(alldata2$datime_start),]
-  alldata2 <- alldata2[!is.na(alldata2$datime_end),]
+  #alldata2 <- alldata2[!is.na(alldata2$datime_start),]
+  #alldata2 <- alldata2[!is.na(alldata2$datime_end),]
 
-  alldata2[alldata2$duration != ".", ]
+  #alldata2[alldata2$duration != ".", ]
 
   alldata2 <- droplevels(alldata2)
 
