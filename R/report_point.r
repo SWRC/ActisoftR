@@ -90,7 +90,8 @@ report_point <- function(period, acti_data, tz = "UTC",...){
         summarise(datime_end  = max(datime_end)
         )
 
-      mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datime[jj])) #, interval_type %in% c("REST", "SLEEP")
+      #mat3 <- dplyr::filter(tab1, as.Date(datime_end) == as.Date(tab2$time_point_datime[jj])) #, interval_type %in% c("REST", "SLEEP")
+      mat3 <- dplyr::filter(tab1, as.Date(datime_end) < as.Date(tab2$time_point_datime[jj]) + 1)
 
       mat3$po <- ifelse(mat3$datime_end >= tab2$time_point_datime[jj],ifelse(mat3$datime_start <= tab2$time_point_datime[jj], TRUE , FALSE) , FALSE)
 
