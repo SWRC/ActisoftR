@@ -36,6 +36,27 @@
 #' decal = data.frame(subject_ID = c("participant01" ,"participant02"), dec = c(0,-2))
 #' plot_Darwent(x = fil, shade = FALSE, datebreaks = "12 hours", decal = decal)
 #'
+#'# Example # 4 reversing the order in the y axis from top to bottom
+#'fil$subject_ID = with(fil, factor(subject_ID, levels = rev(levels(subject_ID))))
+#' q <- plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day", show_plot = FALSE)
+#' datebreaks = "1 day"
+
+#' x11()
+#' resize.win <- function(Width = 12, Height = 5){dev.off();
+#'   dev.new(record = TRUE, width = Width, height = Height)}
+#' resize.win(14, 5)
+
+#' q + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
+#'                      minor_breaks = date_breaks(datebreaks),
+#'                      labels = date_format("%H.%M", tz = "UTC")) +
+#'   theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
+#'   theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
+#'   theme(plot.title = element_text(color = "black", size = 18, hjust = 0.5)) +
+#'   theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
+#'   xlab("Date-Time2") + ylab("Part.") +
+#'   ggtitle("Darwent plot with reverse order in y axis")
+#'
+#'
 #' @export
 #' @importFrom grDevices dev.new dev.off x11 windows
 #' @importFrom dplyr distinct left_join
@@ -44,13 +65,20 @@
 #' @rdname plot.Darwent
 
 
-plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, ...){
+
+
+
+
+
+
+plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, ...){
   subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <- grayzone.end <- NULL
 
   #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
   foo <- foo[!is.na(foo$datime_start),]
   foo <- foo[!is.na(foo$datime_end),]
+
   #foo <- dplyr::mutate(foo, datime_start = as.POSIXct(foo$datime_start,tz = "UTC"), datime_end = as.POSIXct(foo$datime_end,tz = "UTC"))
 
   foo$datime_start <- as.POSIXct(foo$datime_start, tz = "UTC")
@@ -153,10 +181,6 @@ scale_color_manual(values = acolor) +
     scale_fill_manual(name = "Act")
 #else {part_homeTZ = NULL}
   # resizing the plotting area
-  x11() #dev.new()
-  resize.win <- function(Width = 12, Height = 5){dev.off();
-    dev.new(record = TRUE, width = Width, height = Height)}
-  resize.win(14, 2 * part)
 
   p + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
                        minor_breaks = date_breaks(datebreaks),
@@ -171,7 +195,21 @@ scale_color_manual(values = acolor) +
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
     ggtitle("Darwent plot")
 
+
+
+  if(show_plot == TRUE){
+
+  x11() #dev.new()
+  resize.win <- function(Width = 12, Height = 5){dev.off();
+    dev.new(record = TRUE, width = Width, height = Height)}
+  resize.win(14, 2 * part)
+
+  p
+
   }
+
+  else p
+}
 
 
 
@@ -322,4 +360,3 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
 #head(work_dat)
 
 # EOF
-
