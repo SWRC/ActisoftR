@@ -19,7 +19,7 @@
 #' df <- data.frame(datime_start = datime_start, datime_end = datime_end, subject_ID = rep(unique(dat$subject_ID),4))
 #' dif1 <- rnorm(nrow(df), 1,1)
 #' dif2 <- rnorm(nrow(df), 1,1)
-#' df$datime_start <- df$datime_start + (3600*dif)
+#' df$datime_start <- df$datime_start + (3600*dif1)
 #' df$datime_end <- df$datime_end + (3600*dif2)
 #' sheep_counter(dat, work_data = df)
 #'
