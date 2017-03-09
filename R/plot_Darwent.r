@@ -71,7 +71,7 @@
 
 
 
-plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, ...){
+plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, si = 8,...){
   subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <- grayzone.end <- NULL
 
   #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
@@ -156,7 +156,7 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
 
   p <-ggplot2::ggplot() +    #strftime(minim, format="%H:%M:%S")
     geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID),
-                 size = 8) + { # to add the shade periods
+                 size = si) + { # to add the shade periods
                    #if(missing(TZ)) TZ = 0
                    #if(missing(shadow.start)) shadow.start = "22:00:00"
                    #if(missing(shadow.end)) shadow.end = "08:00:00"
@@ -174,7 +174,7 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
                                                            y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
                                                                                      else part_homeTZ <- NULL} +
     theme_bw() +
-    xlab("Date-Time") +
+    xlab("Time") +
     ylab("Participant(s)") +
     theme_classic() +
 scale_color_manual(values = acolor) +
@@ -182,9 +182,17 @@ scale_color_manual(values = acolor) +
 #else {part_homeTZ = NULL}
   # resizing the plotting area
 
+
+  if(show_plot == TRUE){
+
+  x11() #dev.new()
+  resize.win <- function(Width = 12, Height = 5){dev.off();
+    dev.new(record = TRUE, width = Width, height = Height)}
+  resize.win(14, 2 * part)
+
   p + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
                        minor_breaks = date_breaks(datebreaks),
-                       labels = date_format("%H.%M", #"%y-%m-%d %H.%M"
+                       labels = date_format("%H:%M", #"%H.%M" "%y-%m-%d %H.%M"
                                             tz = "UTC")) +
     theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
     theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
@@ -195,20 +203,21 @@ scale_color_manual(values = acolor) +
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
     ggtitle("Darwent plot")
 
-
-
-  if(show_plot == TRUE){
-
-  x11() #dev.new()
-  resize.win <- function(Width = 12, Height = 5){dev.off();
-    dev.new(record = TRUE, width = Width, height = Height)}
-  resize.win(14, 2 * part)
-
-  p
-
   }
 
-  else p
+  else 
+    p + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
+                         minor_breaks = date_breaks(datebreaks),
+                         labels = date_format("%H:%M", #"%H.%M" "%y-%m-%d %H.%M"
+                                              tz = "UTC")) +
+    theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
+    theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
+    theme(plot.title = element_text(color = "black",
+                                    #face = 'bold',
+                                    size = 18,
+                                    hjust = 0.5)) +
+    theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
+    ggtitle("Darwent plot")
 }
 
 
@@ -259,6 +268,8 @@ plot_long <- function(dat, acolor,...){
   #head(dat)
   #str(dat)
 
+  dat <- dat[!is.na(dat$datime_start),]
+  
   dat$subject_ID <- gsub("_.*$", "", dat$subject_ID)
 #dat <- dat[dat$interval_type == "SLEEP", ]
   dat <- dat[!is.na(dat$interval_number), ] # get rid of the 2x summary lines
@@ -291,11 +302,13 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
   #p <- p + geom_segment(aes(x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence), size = 8, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))
   #p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence), size = 8, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))
 
-  p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence),  size = 1.25, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))
+  if(nrow(dat %>% filter(sinceMidnight_end > sinceMidnight_start)) > 0){
+  p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence),  size = 1.25, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))}
   # plot the x-midnight segments in 2 goes: one for the bit between sleep start and midnight
+  if(nrow(dat %>% filter(sinceMidnight_end < sinceMidnight_start)) > 0){
   p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = 1440, y = sequence, yend = sequence), size = 1.25, data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))
   # second bit for midnight until sleep offset
-  p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1), size = 1.25, data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))
+  p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1), size = 1.25, data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))}
 
   # flip it upside down so newest dates are on the top of the figure
   p <- p + scale_y_reverse()
