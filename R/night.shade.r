@@ -21,17 +21,18 @@
 #' @importFrom dplyr distinct filter_
 #
 # used by the Darwent plot
-home.night.shade <- function(x, shadow.start = "22:00:00", shadow.end = "08:00:00", TZ = 0, ...){
+home.night.shade <- function(x, shadow.start = "22:00:00", shadow.end = "08:00:00", TZ = 0, tz = "UTC",...){
   first.last <- c(min(x$datime_start), max(x$datime_end))
   first.last.date <- as.Date(first.last)
   seqdates <- seq.Date(first.last.date[1], first.last.date[2],1)
   if(shadow.start < shadow.end) {seqdates2 <- seqdates}
   else { seqdates2 <- seqdates + 1}
   #seqdates2 <- if_else(shadow.start < shadow.end, as.data.frame(seqdates), as.data.frame(seqdates + 1) )
-  shadow.startend <- data.frame(shadow.start = as.POSIXct(paste(seqdates, shadow.start), format="%Y-%m-%d %H:%M:%S") + lubridate::hours(TZ),
-                                shadow.end = as.POSIXct(paste(seqdates2 , shadow.end), format="%Y-%m-%d %H:%M:%S") + lubridate::hours(TZ))
+  shadow.startend <- data.frame(shadow.start = as.POSIXct(paste(seqdates, shadow.start), format="%Y-%m-%d %H:%M:%S", tz = tz) + lubridate::hours(TZ),
+                                shadow.end = as.POSIXct(paste(seqdates2 , shadow.end), format="%Y-%m-%d %H:%M:%S", tz = tz) + lubridate::hours(TZ))
   shadow.startend
 }
+
 
 
 
