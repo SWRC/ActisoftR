@@ -24,7 +24,7 @@
 #' flight <- flight[,-c(3,4)]
 #' colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
 #' flight <- tbl_df(flight)
-#' part_localTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
+#' part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
 #' plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, local.shade = TRUE, datebreaks = "12 hour")
 #'
 #' # Example # 3
@@ -57,7 +57,7 @@
 plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, si = 8, shadow.start = "20:00:00", shadow.end = "06:00:00", tz = "UTC",...){
   subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <- grayzone.end <- NULL
 
-  #part_localTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
+  #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
   foo <- foo[!is.na(foo$datime_start),]
   foo <- foo[!is.na(foo$datime_end),]
@@ -131,11 +131,11 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00", "#F0E4
                                                                                    xmax = shadow.end,
                                                                                    ymin = 0, ymax = part + 0.5), alpha = 0.175, fill = "green")
                    } + {
-                  if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = x, part_localTZ = part_localTZ),
+                  if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = x, part_homeTZ = part_homeTZ),
                                                        aes(colour = interval_type, x = as.POSIXct(grayzone.start,tz = tz),
                                                            xend = as.POSIXct(grayzone.end, tz = tz),
                                                            y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
-                                                                                     else part_localTZ <- NULL} +
+                                                                                     else part_homeTZ <- NULL} +
     theme_bw() + xlab("Time") +  ylab("Participant(s)") +
     theme_classic() +  scale_color_manual(values = acolor) +
     scale_fill_manual(name = "Act")
@@ -329,3 +329,5 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
 #head(work_dat)
 
 # EOF
+
+
