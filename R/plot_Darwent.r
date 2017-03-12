@@ -15,8 +15,6 @@
 #' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 #' library("dplyr")
 #' fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph_brand == "Actiware")
-#' fil <- dplyr::tbl_df(fil)
-#' fil <- dplyr::select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
 #' plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day")
 #' # Example # 2
 #' # using flight data
@@ -26,10 +24,7 @@
 #' flight <- flight[,-c(3,4)]
 #' colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
 #' flight <- tbl_df(flight)
-#' homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
-#' head(flight)
-#' #plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, datebreaks = "12 hour")
-#' part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
+#' part_localTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
 #' plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, local.shade = TRUE, datebreaks = "12 hour")
 #'
 #' # Example # 3
@@ -40,12 +35,6 @@
 #'fil$subject_ID = with(fil, factor(subject_ID, levels = rev(levels(subject_ID))))
 #' q <- plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day", show_plot = FALSE)
 #' datebreaks = "1 day"
-
-#' x11()
-#' resize.win <- function(Width = 12, Height = 5){dev.off();
-#'   dev.new(record = TRUE, width = Width, height = Height)}
-#' resize.win(14, 5)
-
 #' q + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
 #'                      minor_breaks = date_breaks(datebreaks),
 #'                      labels = date_format("%H.%M", tz = "UTC")) +
@@ -65,80 +54,62 @@
 #' @rdname plot.Darwent
 
 
-
-
-
-
-
-
-plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, si = 8,...){
+plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, si = 8, shadow.start = "20:00:00", shadow.end = "06:00:00", tz = "UTC",...){
   subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <- grayzone.end <- NULL
 
-  #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
+  #part_localTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
   foo <- foo[!is.na(foo$datime_start),]
   foo <- foo[!is.na(foo$datime_end),]
 
-  #foo <- dplyr::mutate(foo, datime_start = as.POSIXct(foo$datime_start,tz = "UTC"), datime_end = as.POSIXct(foo$datime_end,tz = "UTC"))
+  foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)
+  foo$datime_end = as.POSIXct(foo$datime_end, tz = tz)
 
-  foo$datime_start <- as.POSIXct(foo$datime_start, tz = "UTC")
-  foo$datime_end = as.POSIXct(foo$datime_end,tz = "UTC")
-
-  #part <- nrow(distinct(x,x$subject_ID)) # number of participants. It defines the height of the plot
+  # number of participants. It defines the height of the plot
   part <- length(unique(x$subject_ID))
   participant <- as.factor(unique(x$subject_ID))
   participant <- droplevels(participant)
 
   if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0,part))}
 
+  if(base == "TRUE"){ # matching the participants at the same start date
+    foo <- as.data.frame(foo)
+    foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)
+    foo$datime_end = as.POSIXct(foo$datime_end,tz = tz)
 
-if(base == "TRUE"){ # matching the participants at the same start date
-  foo <- as.data.frame(foo)
-  foo$datime_start <- as.POSIXct(foo$datime_start, tz = "UTC")
-  foo$datime_end = as.POSIXct(foo$datime_end,tz = "UTC")
+    foo2 <-  foo %>%
+      group_by(subject_ID) %>%
+      summarise(datime_start = min(datime_start))
 
-  foo2 <-  foo %>%
-    group_by(subject_ID) %>%
-    summarise(datime_start = min(datime_start))
+    foo2$datime_start <- round(foo2$datime_start,"days")
 
-  foo2$datime_start <- round(foo2$datime_start,"days")
+    minim <- min(foo2$datime_start)
+    minim <- round(minim,"days")
 
-  minim <- min(foo2$datime_start)
-  minim <- round(minim,"days")
+    foo2$minim <- minim
+    foo2$base <- foo2$minim - foo2$datime_start
 
-  foo2$minim <- minim
-  foo2$base <- foo2$minim - foo2$datime_start
+    foo2$datime_start <- as.Date(foo2$datime_start)
+    foo2$minim <- as.Date(foo2$minim)
 
-  foo2$datime_start <- as.Date(foo2$datime_start)
-  foo2$minim <- as.Date(foo2$minim)
+    foo3 <- foo %>% left_join(foo2, by = "subject_ID")
 
-  foo3 <- foo %>% left_join(foo2, by = "subject_ID")
+    foo3$adj <- foo3$datime_start.x + lubridate::seconds(foo3$base)
+    foo3$adj2 <- foo3$datime_end + lubridate::seconds(foo3$base)
 
-  foo3$adj <- foo3$datime_start.x + lubridate::seconds(foo3$base)
-  foo3$adj2 <- foo3$datime_end + lubridate::seconds(foo3$base)
+    foo3$datime_start <- foo3$adj
+    foo3$datime_end <- foo3$adj2
 
-  foo3$datime_start <- foo3$adj
-  foo3$datime_end <- foo3$adj2
+    foo3 <- droplevels(foo3)
+    foo3$subject_ID <- as.factor(foo3$subject_ID)
 
-  foo3 <- droplevels(foo3)
-  foo3$subject_ID <- as.factor(foo3$subject_ID)
+    foo4 <- foo3 %>% left_join(decal, by = "subject_ID")
+    foo4$decal <- foo4$dec * 60 * 60 * 24
 
-  foo4 <- foo3 %>% left_join(decal, by = "subject_ID")
-  foo4$decal <- foo4$dec * 60*60*24
-
-  foo4$datime_start <- foo4$datime_start + foo4$decal
-  foo4$datime_end <- foo4$datime_end + foo4$decal
-
-  #foo4 <- foo3
-  #useful <- c("subject_ID", "interval_type", "interval_number", "adj", "adj2")
-  #foo4 <- foo4[, useful]
-
-  #names(foo4)[names(foo4)=="adj"] <- "datime_start"
-  #names(foo4)[names(foo4)=="adj2"] <- "datime_end"
-
-  #foo <- foo4
-  foo <- foo4
-}
+    foo4$datime_start <- foo4$datime_start + foo4$decal
+    foo4$datime_end <- foo4$datime_end + foo4$decal
+    foo <- foo4
+  }
 
 
   if (export == TRUE){
@@ -149,42 +120,29 @@ if(base == "TRUE"){ # matching the participants at the same start date
   }
 
 
-if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Defining the colors
+if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7")} # Defining the colors
 
 
-
-
-  p <-ggplot2::ggplot() +    #strftime(minim, format="%H:%M:%S")
+  p <-ggplot2::ggplot() +
     geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID),
-                 size = si) + { # to add the shade periods
-                   #if(missing(TZ)) TZ = 0
-                   #if(missing(shadow.start)) shadow.start = "22:00:00"
-                   #if(missing(shadow.end)) shadow.end = "08:00:00"
-                   #shadow.start = "22:00:00";
-                   shadow.start = "10:00:00"
-                   shadow.end = "20:00:00"
+                 size = si) + { # adding the shade periods
 
-
-                   if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = as.POSIXct(shadow.start), #, tz = "UTC"
-                                                                                   xmax = as.POSIXct(shadow.end), #, tz = "UTC"
-                                                                                   ymin = 0, ymax = part+0.5), alpha = 0.175, fill = "green") } + {
-                  if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = x, part_homeTZ = part_homeTZ),
-                                                       aes(colour = interval_type, x = as.POSIXct(grayzone.start,tz = "UTC"), #ymd_hms
-                                                           xend = as.POSIXct(grayzone.end,tz = "UTC"),
+                   if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = shadow.start,
+                                                                                   xmax = shadow.end,
+                                                                                   ymin = 0, ymax = part + 0.5), alpha = 0.175, fill = "green")
+                   } + {
+                  if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = x, part_localTZ = part_localTZ),
+                                                       aes(colour = interval_type, x = as.POSIXct(grayzone.start,tz = tz),
+                                                           xend = as.POSIXct(grayzone.end, tz = tz),
                                                            y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
-                                                                                     else part_homeTZ <- NULL} +
-    theme_bw() +
-    xlab("Time") +
-    ylab("Participant(s)") +
-    theme_classic() +
-scale_color_manual(values = acolor) +
+                                                                                     else part_localTZ <- NULL} +
+    theme_bw() + xlab("Time") +  ylab("Participant(s)") +
+    theme_classic() +  scale_color_manual(values = acolor) +
     scale_fill_manual(name = "Act")
-#else {part_homeTZ = NULL}
+
   # resizing the plotting area
 
-
   if(show_plot == TRUE){
-
   x11() #dev.new()
   resize.win <- function(Width = 12, Height = 5){dev.off();
     dev.new(record = TRUE, width = Width, height = Height)}
@@ -192,12 +150,11 @@ scale_color_manual(values = acolor) +
 
   p + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
                        minor_breaks = date_breaks(datebreaks),
-                       labels = date_format("%H:%M", #"%H.%M" "%y-%m-%d %H.%M"
-                                            tz = "UTC")) +
+                       labels = date_format("%H:%M", #"%y-%m-%d %H.%M"
+                                            tz = tz)) +
     theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
     theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
     theme(plot.title = element_text(color = "black",
-                                    #face = 'bold',
                                     size = 18,
                                     hjust = 0.5)) +
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
@@ -205,11 +162,11 @@ scale_color_manual(values = acolor) +
 
   }
 
-  else 
+  else
     p + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
                          minor_breaks = date_breaks(datebreaks),
-                         labels = date_format("%H:%M", #"%H.%M" "%y-%m-%d %H.%M"
-                                              tz = "UTC")) +
+                         labels = date_format("%H:%M", # "%y-%m-%d %H.%M"
+                                              tz = tz)) +
     theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
     theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
     theme(plot.title = element_text(color = "black",
@@ -219,7 +176,6 @@ scale_color_manual(values = acolor) +
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
     ggtitle("Darwent plot")
 }
-
 
 
 
@@ -269,7 +225,7 @@ plot_long <- function(dat, acolor,...){
   #str(dat)
 
   dat <- dat[!is.na(dat$datime_start),]
-  
+
   dat$subject_ID <- gsub("_.*$", "", dat$subject_ID)
 #dat <- dat[dat$interval_type == "SLEEP", ]
   dat <- dat[!is.na(dat$interval_number), ] # get rid of the 2x summary lines
