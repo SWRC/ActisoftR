@@ -42,7 +42,7 @@ home.night.shade <- function(x, shadow.start = "22:00:00", shadow.end = "08:00:0
 #' @param x a dataframe
 #' @param shadow.start starting time of the home night, 22:00:00 by defaults
 #' @param shadow.end ending time of the home night, 08:00:00 by defaults
-#' @param part_localTZ a dataframe containing the local time zone by participant.
+#' @param part_homeTZ a dataframe containing the local time zone by participant.
 #' @param ... Optional parameters
 #'
 #' @return a dataframe
@@ -54,21 +54,21 @@ home.night.shade <- function(x, shadow.start = "22:00:00", shadow.end = "08:00:0
 #' flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
 #' flight <- flight[,-c(3,4)]
 #' colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
-#' part_localTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
-#' sh <- local.night.shade(x = flight, part_localTZ = part_localTZ, shadow.start = "22:00:00", shadow.end = "08:00:00")
+#' part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
+#' sh <- local.night.shade(x = flight, part_homeTZ = part_homeTZ, shadow.start = "22:00:00", shadow.end = "08:00:00")
 
 #' @export
 #' @importFrom dplyr distinct filter tbl_df
 #'
-local.night.shade <- function(x, part_localTZ, shadow.start = "20:00:00",
+local.night.shade <- function(x, part_homeTZ, shadow.start = "20:00:00",
                               shadow.end = "06:00:00", tz = "UTC",...){ #
 
   y <- x[which(!is.na(x$startTZ)),]
   particip <- as.vector(t(unique(x$subject_ID))) #as.vector(t(distinct(y, y$subject_ID)))
-  if(missing(part_localTZ)){part_localTZ <- data.frame (subject_ID = particip, homeTZ = rep(0,length(particip)))}
+  if(missing(part_homeTZ)){part_homeTZ <- data.frame (subject_ID = particip, homeTZ = rep(0,length(particip)))}
   u <- NULL
   for (ii in 1 : length(particip)){
-      v <- part_localTZ[part_localTZ$subject_ID == particip[ii],]
+      v <- part_homeTZ[part_homeTZ$subject_ID == particip[ii],]
       z <- dplyr::filter(y, y$subject_ID == particip[ii], y$startTZ != v$homeTZ | y$endTZ != v$homeTZ )
       z$grayzone.start <- lubridate::ymd_hms(paste(round.POSIXt(z$datime_start, units = "days" ), lubridate::hms(shadow.start) )) - lubridate::hours(z$startTZ)
       z$grayzone.end <- lubridate::ymd_hms(paste(round.POSIXt(z$datime_end, units = "days"), lubridate::hms(shadow.end) )) - lubridate::hours(z$endTZ)
@@ -76,6 +76,7 @@ local.night.shade <- function(x, part_localTZ, shadow.start = "20:00:00",
   }
 u
 }
+
 
 
 
