@@ -1,63 +1,71 @@
 ---
 title: "ActisoftR 0.0.1 vignettes"
 address: https://github.com/SWRC/ActisoftR
-author: Edgar Santos-Fernandez (edgar.santosfdez@gmail.com), Lora Wu (L.Wu@massey.ac.nz),
-  Margo van den Berg (M.J.vandenBerg@massey.ac.nz)
+author: Edgar Santos-Fernandez (edgar.santosfdez@gmail.com), Lora Wu (L.Wu@massey.ac.nz), Margo van den Berg (M.J.vandenBerg@massey.ac.nz)
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
+
+bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  nocite: @dplyr, @ggplot2, @lubridate, @plotly, @DT, @magrittr, @scales, @ActisoftR
 ---
 
 
 # Introducing ActisoftR
-ActisoftR allows parsing actigraphy data. 
-It consists of several functions to import, process, plot and generate reports.
+ActisoftR allows parsing actigraphy data and summarise scored data across user-defined intervals.
+It consists of several functions to import, process, plot and to generate reports.
+The package handles output from ActionW (Ambulatory Moniotring, Inc.) and Actiware (Philips) programs. In the future it is expected to handle files from other actigraphy brands.
 
-
-# Importing
-Firstly, the actigraph output file(s) need to be imported. 
-```read_actigraph_csv``` reads data from a specified path.  
-The folder must contain the subfolders 'Actiware' and 'AMI' since these actigraph output files have a different format. 
-The function imports all the CSV files from the above folders and so far, it supports CSV files only. A standard file name is not required. 
-The imported files are merged creating an organic single file.
-If the CSV files have a different number of columns the function will fill missing columns with NAs.
-
-We firstly install the package:
-```{r, include=TRUE, cache=FALSE, message=F, warning=F}
+We first install the package from CRAN:
+```{r, include=TRUE, cache=FALSE, message=FALSE, warning=FALSE}
 # install.packages("ActisoftR")
 ```
-Or you can get it from github:
+or directly from Github:
 ```{r}
 #devtools::install_github("SWRC/ActisoftR")
 ```
 
 We then load the package:
 
-```{r, include=TRUE, cache=FALSE, message=F, warning=F}
+```{r, include=TRUE, cache=FALSE, message=FALSE, warning=FALSE}
 library("ActisoftR")
-
 ```
 
-The file EXAMPLE_DATA contains two and three Actiware and AMI-type files, which will be simultaneously imported. 
+and some others that we will use: 
+```{r, include=TRUE, cache=FALSE, message=FALSE, warning=FALSE}
+library("dplyr") 
+library("lubridate")
+library("ggplot2")
+library("ActisoftR")
+library("plotly")
+library("DT")
+library("magrittr")
+library("scales")
+```
+
+# Importing
+Actigraphy output file(s) can be imported using the function ```read_actigraph_csv``` specifying the path.
+The folder must contain the subfolders 'Actiware' and 'AMI' since these actigraphy output files have a different format. 
+The function imports all the CSV files from the above folders and so far, it supports CSV files only. A standard file name is not required. 
+The imported files are merged creating an organic single file.
+If the CSV files have a different number of columns the function will fill missing columns with NAs.
+
+The file EXAMPLE_DATA contains two and three Actiware and AMI-type files respectively, which will be simultaneously imported. 
 
 ```{r}
 acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 ```
 
 The output file can be dynamically viewed using:
-```{r, include=TRUE, cache=FALSE, message=F, warning=F}
-library("DT")
+```{r, include=TRUE, cache=FALSE, message=FALSE, warning=FALSE}
 datatable(acti_data , filter = 'top', width = 800, height = 700)
 ```
 
 Other files created manually in Microsoft Excel can be imported directly e.g.:
 
-```{r, include=FALSE, cache=FALSE}
-library("dplyr") 
-```
 
 ```{r}
 flight <- read.csv(file = 'C:\\1\\EXAMPLE_DATA\\Work\\work.csv', sep = ",",header = TRUE, skip = 0)
@@ -72,86 +80,89 @@ datatable( flight , filter = 'top', width = 800, height = 700)
 
 
 # Reports
-Reports can be generated specifying e.g. periods and ```summary_type```. 
+Reports can be generated specifying e.g. periods and ```summary_type```. The possible ```summary_type``` are described below:
 
 
 Summary_type | Description
 -------------|-----------------------------------------------------------------------------------------------
-```daily```       | A single ReportPeriod is generated from the given Start Datime with the given duration.
-```shade```       | One ReportPeriod is generated from the given Start Datime with the given duration. Then, additional ReportPeriods are generated with the same start end times, each day, until the given End Datime is reached.
-```sequential```  | ReportPeriods of given duration are generated from the given Start Datime until the given End Datime is reached.
-```time_to_time``` | A single ReportPeriod is generated between the given Start End Datimes.
+```daily```       | A single ReportPeriod is generated from the given Start_Datime with the given duration.
+```first```       | One ReportPeriod is generated from the given Start_Datime with the given duration. Then, additional ReportPeriods are generated with the same start end times, each day, until the given End_Datime is reached.
+```sequential```  | ReportPeriods of given duration are generated from the given Start_Datime until the given End_Datime is reached.
+```time_to_time``` | A single ReportPeriod is generated between the given Start_End_Datimes.
 
 
 ## Report based on parameter periods
 
-The function ```report_period``` requires: an ```input period``` CSV file and a dataset of the form ```acti_data```. We first import the report input parameters. 
+The function ```report_period``` requires: an ```input period``` CSV file and a dataset of the form ```acti_data```. 
 
 ### Example # 1
-
-
-```{r, include=TRUE, cache=FALSE, message=F, warning=F}
-library("lubridate") 
-library("dplyr")
-```
-
+We first import the report input parameters:
 
 ```{r}
 fp <- 'C:\\1\\EXAMPLE_DATA\\input parameters example period.csv'
-input.param.period <- tbl_df(param_period (filepath = fp))
-input.param.period$summary_start_datime <- dmy_hm(input.param.period$summary_start_datime,  tz = "UTC")
-input.param.period$summary_end_datime <- dmy_hm(input.param.period$summary_end_datime,  tz = "UTC")
+p <- tbl_df(param_period (filepath = fp))
+p$summary_start_datime <- dmy_hm(p$summary_start_datime,  tz = "UTC")
+p$summary_end_datime <- dmy_hm(p$summary_end_datime,  tz = "UTC")
 ```
 
 ```{r}
-rep1 <- report_period(period = input.param.period , acti_data = acti_data)
+rep1 <- report_period(period = p , acti_data = acti_data)
 datatable( rep1, width = 1000, height = 1000)
 ```
 
 
 ### Example # 2
-Now, we generate a report of ```summary_type``` = sequential specifying a date-time interval larger than 24 hours with ```summary_duration_h```= 24 hours.  
+Now, we generate a report of ```summary_type``` = sequential specifying a date-time interval period larger than 24 hours with ```summary_duration_h``` = 24 hours.  
 ```{r}
 acti_data2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_2")
-input.param.period2 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example period2.csv"), sep = ",", header = TRUE, skip = 0)
-input.param.period2$summary_start_datime <- lubridate::dmy_hms(input.param.period2$summary_start_datime,  tz = "UTC")
-input.param.period2$summary_end_datime <- lubridate::dmy_hms(input.param.period2$summary_end_datime,  tz = "UTC")
-datatable(input.param.period2)
+p2 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example period2.csv"), sep = ",", header = TRUE, skip = 0)
+p2$summary_start_datime <- lubridate::dmy_hms(p2$summary_start_datime,  tz = "UTC")
+p2$summary_end_datime <- lubridate::dmy_hms(p2$summary_end_datime,  tz = "UTC")
+datatable(p2)
 ```
 
 Then generate the report using:
 ```{r}
-rep2 <- report_period(period = input.param.period2 , acti_data = acti_data2)
+rep2 <- report_period(period = p2 , acti_data = acti_data2)
 datatable( rep2, width = 1000, height = 750)
 ```
 
 
 ### Example # 3
-This is a more complex example since we will use several ```summary_type``` and multiple ```summary_duration_h```, including negative values.
-Moreover, the rest/sleep intervals get split across parameters.
+This is a more complex example since we will use several ```summary_type``` values and multiple ```summary_duration_h```, including negative values.
+Moreover, in some cases the rest/sleep intervals get split across parameters.
 
 
 ```{r}
-# Example 4 mixed summary_type
 acti_data2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_2")
-input.param.period4 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_2\\input parameters example period mixed.csv"), sep = ",", header = TRUE, skip = 0, na.strings=c("NA","NaN", " "))
-input.param.period4$summary_start_datime <- lubridate::dmy_hm(input.param.period4$summary_start_datime,  tz = "UTC")
-input.param.period4$summary_end_datime <- lubridate::dmy_hm(input.param.period4$summary_end_datime,  tz = "UTC")
+p3 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_2\\input parameters example period mixed.csv"), sep = ",", header = TRUE, skip = 0, na.strings=c("NA","NaN", " "))
+p3$summary_start_datime <- lubridate::dmy_hm(p3$summary_start_datime,  tz = "UTC")
+p3$summary_end_datime <- lubridate::dmy_hm(p3$summary_end_datime,  tz = "UTC")
 
 ```
 
 The input parameters are shown below:
 
 ```{r}
-datatable(input.param.period4, width = 1000, height = 650)
+datatable(p3, width = 1000, height = 650)
 ```
 
 ```{r}
-rep4 <- report_period(period = input.param.period4 , acti_data = acti_data2)
-datatable(rep4, width = 1000, height = 700)
+rep3 <- report_period(period = p3 , acti_data = acti_data2)
+datatable(rep3, width = 1000, height = 700)
 ```
 
 
+### Example # 4 
+This example contains excluded periods
+```{r}
+acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_3")
+p4 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_3\\input parameters example period with Excluded.csv"), sep = ",", header = TRUE, skip = 0)
+ p4$summary_start_datime <- dmy_hm(p4$summary_start_datime,  tz = "UTC")
+ p4$summary_end_datime <- dmy_hm(p4$summary_end_datime,  tz = "UTC")
+ rep5 <- report_period(period = p4 , acti_data = acti_data)
+ datatable(rep5, width = 1000, height = 750) 
+```
 
 
 
@@ -159,95 +170,248 @@ datatable(rep4, width = 1000, height = 700)
 ### Example # 1 
 We first import the file containing the parameter points:
 ```{r}
-input.param.point <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example point.csv"), sep = ",", header = TRUE, skip = 0)
-input.param.point$time_point_datime <- dmy_hm(input.param.point$time_point_datime,  tz = "UTC")
+q <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example point.csv"), sep = ",", header = TRUE, skip = 0)
+q$time_point_datime <- dmy_hm(q$time_point_datime,  tz = "UTC")
 
 ```
 
 To generate the report:
 ```{r}
-rep3 <- report_point(period = input.param.point, acti_data = acti_data)
-datatable( rep3, width = 1000, height = 700)
+rep5 <- report_point(period = q, acti_data = acti_data)
+datatable( rep5, width = 1000, height = 700)
 
 ```
 
 ### Example # 2
-Excluded periods are shown in this example. The result in row 4 with_excluded_bad = TRUE
+Excluded periods are shown in this example. The result in row 4 ```with_excluded_bad``` = TRUE
 
 ```{r}
 acti_data2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_3")
 q2 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_3\\input parameters example point with Excluded.csv"),
  sep = ",", header = TRUE, skip = 0)
 q2$time_point_datime <- dmy_hm(q2$time_point_datime,  tz = "UTC")
-rep2 <- report_point(period = q2, acti_data = acti_data2)
-datatable(rep2, width = 1000, height = 700)
+rep6 <- report_point(period = q2, acti_data = acti_data2)
+datatable(rep6, width = 1000, height = 550)
 ```
 
 
 
 # Plotting
-The function ```plot.Darwent``` allows you to plot participants' intervals say sleep/wake or sleep/work . The most useful arguments are:
+The function ```plot_Darwent``` allows plotting participants' ```interval_type```, say sleep/wake or sleep/work or all of them. The most useful arguments are of this function are:
 
 Argument | Description
 ---------|-------------
 ```x``` | a data frame 
 ```shade```    | if TRUE, it will draw in light green the home night period
 ```local.shade```| if TRUE, it will draw in gray the local night period
-```datebreaks``` | is the distance between breaks in the x-axis
-```acolor```| specifies the colors for the interval_type
+```base```| a logical argument set as TRUE by default 
+```datebreaks``` | is the distance between breaks in the x-axis e.g. "12 hours"
+```acolor```| specifies the colors for the ```interval_type```
+```export```| to export the data as a CSV file
 
-Apart from ```x```, the arguments are optional. 
+Apart from ```x```, all the other arguments are optional. 
 
-In this example, we want to plot Actiware actigraphs only.
+### Example # 1
+In this example, we will plot Actiware actigraphy only. Therefore,
 
-```{r, include=FALSE, cache=FALSE}
-fil <- filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph == "Actiware") 
+```{r, include=TRUE, cache=FALSE}
+fil <- filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph_brand == "Actiware") 
 fil <- tbl_df(fil) 
 ```
-```{r, include=FALSE, cache=FALSE}
+
+```{r, include=TRUE, cache=FALSE}
 # Example Respironics study
 # plotting flight study without night period shade
 plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day") 
 ```
 
-
-The same can be made web-based using the ```plotly``` package. This interactive graph allows you to zoom in by dragging and autoscaling with a double-click.
+The same can be made web-based using the ```plotly``` package. This interactive graph allows you to zoom in by dragging and autoscaling double-clicking.
 
 ```{r}
-w <- plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day") 
+w <- plot_Darwent(x = fil, shade = FALSE, datebreaks = "12 hours") 
 ```
 
 
-```{r, include=TRUE, cache=FALSE, message=F, warning=F}
-library("plotly") 
-```
 
 ```{r}
 ggplotly(w, width = 900, height = 600)
 ```
 
-
-Example # 2 : Using work data
+Similarly using the ```decal``` argument:
+```{r}
+decal = data.frame(subject_ID = c("participant01" ,"participant02"), dec = c(1,-2))
+w2 <- plot_Darwent(x = fil, shade = FALSE, datebreaks = "12 hours", decal = decal)
+```
 
 ```{r}
-part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3), decal = c(0,0,5))
-plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, local.shade = TRUE, datebreaks = "1 day") 
-```
-The same but using ```plotly```
-```{r, echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
-w2 <- plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, local.shade = TRUE, datebreaks = "1 day") 
 ggplotly(w2, width = 900, height = 600)
 ```
 
-Example # 3 
-The ```plot_long()``` can be used to visualize data when dealing with a long period of time. One participant at the time is plotted. The horizontal axis represents the day from the 0 to the 24hrs and the days are shown on the vertical axis. 
+
+### Example # 2
+All the ```interval_type``` data can be plotted directly.
 
 ```{r}
-dat <- read.csv("C:\\1\\EXAMPLE_DATA\\AMI\\example01_AMI.csv")
-w3 <- plot_long (x = dat)
-ggplotly(w3, width = 900, height = 600)
+p <- plot_Darwent(x = acti_data2, shade = FALSE, datebreaks = "1 day")
+ggplotly(p, width = 900, height = 600)
 ```
 
+
+### Example # 3: Using work data
+
+```{r}
+part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3))
+```
+
+```{r, echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
+w2 <- plot_Darwent(x = flight, shade = TRUE, local.shade = TRUE, datebreaks = "1 day", acolor = c("#56B4E9", "#990000")) 
+ggplotly(w2, width = 900, height = 600)
+```
+
+## Long plot
+
+The ```plot_long()``` can be used to visualize data when dealing with a long period of time. One participant at the time is plotted. The horizontal axis represents the day from the 0 to the 24hrs and the days are shown on the vertical axis. 
+
+### Example # 1
+```{r, warning=FALSE}
+ acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
+
+fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph_brand == "Actiware", subject_ID=="participant01")
+fil <- dplyr::tbl_df(fil)
+fil <- dplyr::select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
+w3 <- plot_long (dat = fil)
+ggplotly(w3, width = 900, height = 650)
+```
+
+### Example # 2
+In this example we plot all the data from the participant01, including the ```interval_type``` EXCLUDED and ACTIVE. 
+```{r, warning=FALSE}
+fil2 <- dplyr::filter(acti_data, subject_ID=="participant01")
+w4 <- plot_long (dat = fil2)
+ggplotly(w4, width = 900, height = 670)
+```
+
+
+#Cumulative sleep debt (```csd```) function 
+The cumulative sleep debt across participants can be computed using ```csd```. 
+A negative value means that daily total sleep is smaller than the baseline value. The main arguments are:
+
+Argument | Description
+-------------|-----------------------------------------------------------------------------------------------
+```x```       | a report period
+```baseline_sleep```       |  a data frame containing the normal sleep duration or baseline by participant.
+```reset```  | consecutive number of sleep periods that will set as zero the cumulative sleep debt.
+```plot``` | a logical variable. By default is TRUE.
+
+### Example # 1
+This function requires a ```report_period```:
+```{r}
+acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
+p <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example period.csv"),  sep = ",", header = TRUE, skip = 0)
+p$summary_start_datime <- dmy_hm(p$summary_start_datime,  tz = "UTC")
+p$summary_end_datime <- dmy_hm(p$summary_end_datime,  tz = "UTC")
+rep1 <- report_period(period = p , acti_data = acti_data)
+
+```
+In this example, let's assume that the second period has an ```interval_type``` = Excluded, which will be ignored. 
+
+```{r}
+ rep1$with_excluded_bad[2] <- TRUE
+```
+
+Let's define the ```baseline_sleep``` duration for each participant
+```{r}
+ baseline_sleep <-  data.frame(subject_ID = c("example01", "example02"), baseline_sleep = c(60 * 8, 60 * 7))  # normal sleep duration by participant
+
+```
+
+Suppose that the ```reset``` rule for the ```baseline_sleep``` deficit is 2.
+
+```{r}
+ reset <- 2
+ z <- csd(x = rep1, baseline_sleep = baseline_sleep, reset = 2)
+```
+
+
+
+```{r}
+datatable(z[[2]] , filter = 'top', width = 800, height = 500)
+```
+
+
+The function returns a plot of the cumulative sleep debt vs the period number. Notice that the second period is not shown in the plot since it was marked as Excluded for the first participant.  
+
+```{r}
+ggplotly(z[[1]], width = 900, height = 600)
+```
+
+
+### Example # 2: with no reset by adding large reset value
+
+
+```{r, include=TRUE, cache=FALSE}
+z2 <- csd(x = rep1, baseline_sleep = baseline_sleep, reset = 1e5) 
+```
+
+
+```{r}
+ggplotly(z2[[1]], width = 900, height = 650)
+```
+
+
+
+
+#```sheep_counter``` function
+It computes the empirical probability that a group or an individual are sleeping at a given time of the day. It can be seen as the proportion of participants that are sleeping across 24 hours period.
+
+Argument | Description
+---------|-------------
+```dat``` | a data frame of the form acti_data obtained from the function ```read_actigraph_csv```.
+```tz```    | the time zone. "UTC" by default.
+```interv```| interval of time, set as 10min.
+```datebreaks```| is the distance between breaks in the x-axis. "2 hour" by default.
+ 
+
+### Example # 1: Actiware example
+```{r}
+dat <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_6")
+a <- sheep_counter(dat, tz = "UTC", interv = "10 mins", datebreaks = "2 hour")
+```
+
+```{r}
+ggplotly(a, width = 900, height = 600)
+```
+
+### Example # 2: Adding (hypothetical) work data. 
+```{r}
+datime_start <- rep( seq(ISOdatetime(2012,05,12,8,00,00, tz = "UTC"),(ISOdatetime(2012,05,12,8,00,00, tz = "UTC") + days(3)), length.out = 4), length(unique(dat$subject_ID)) )
+datime_end <- rep( seq(ISOdatetime(2012,05,12,16,00,00, tz = "UTC"),(ISOdatetime(2012,05,12,16,00,00, tz = "UTC") + days(3)), length.out = 4), length(unique(dat$subject_ID)) )
+df <- data.frame(datime_start = datime_start, datime_end = datime_end, subject_ID = rep(unique(dat$subject_ID),4))
+dif1 <- rnorm(nrow(df), 1,1)
+dif2 <- rnorm(nrow(df), 1,1)
+df$datime_start <- df$datime_start + (3600*dif1)
+df$datime_end <- df$datime_end + (3600*dif2)
+a2 <- sheep_counter(dat, work_data = df)
+```
+
+```{r}
+ggplotly(a2, width = 900, height = 600)
+```
+
+
+### Example # 3: AMI example
+```{r}
+dat2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_7")
+b <- sheep_counter(dat2)
+```
+
+```{r}
+ggplotly(b, width = 900, height = 600)
+```
+
+# Acknowledgement
+This work was supported by the Sleep/Wake Research Centre. Massey University, New Zealand (www.sleepwake.ac.nz). Thanks to Professor Philippa Gander, Associate Professor Leigh Signal and other members of the Sleep/Wake Research Centre for their suggestions. We also thank Adam Alexander T. Smith. Adrian Moonen (Eastbourne, New Zealand), is acknowledged for creating an early version of the sheep counter program.
+
 # References
-[Cite the paper(s) (if any) where the Darwent plot was suggested]
-[Cite other relevant papers and maybe some R packages]
+
+

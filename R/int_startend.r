@@ -10,17 +10,25 @@
 #' @export
 #' @importFrom dplyr group_by slice select_
 #' @importFrom magrittr %>%
+#' @importFrom lubridate ymd_hms
 #'
-int_startend <- function(x, ...){
-
+int_startend <- function(x, tz = "UTC", ...){
+  subject_ID <- summary_start_datime <- summary_end_datime <- NULL
 # starting datime
-  from <- x  %>% group_by(actigraphy_file) %>% slice(which.min(summary_start_datime))
-  from <- select_(from, .dots = c("actigraphy_file", "summary_start_datime"))
+  use <- c("subject_ID", "summary_start_datime", "summary_end_datime")
+  use2 <- c("summary_start_datime", "summary_end_datime")
+  y <- x[, use]
+mini <- as.POSIXct(apply(y[,use2], 1, min), tz = tz)#lubridate::ymd_hms(apply(y[,use2], 1, min))
+maxi <- as.POSIXct(apply(y[,use2], 1, max), tz = tz)#lubridate::ymd_hms(apply(y[,use2], 1, max))
+y$summary_start_datime <- mini
+y$summary_end_datime <- maxi
+
+  from <- y  %>% group_by(subject_ID) %>% slice(which.min(summary_start_datime))
+  from <- select_(from, .dots = c("subject_ID", "summary_start_datime"))
   # ending datime
-  to <- x %>% group_by(actigraphy_file) %>% slice(which.max(summary_end_datime))
-  to <- select_(to, .dots = c("actigraphy_file", "summary_end_datime"))
+  to <- y %>% group_by(subject_ID) %>% slice(which.max(summary_end_datime))
+  to <- select_(to, .dots = c("subject_ID", "summary_end_datime"))
   from$summary_end_datime <-  to$summary_end_datime
   from
 #int_startend(period)
 }
-

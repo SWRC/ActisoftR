@@ -23,7 +23,7 @@
 #'
 deagg <-  function(period){ #deaggregation
 
-  df <- d2 <- particip <- ds0 <- ds <- matr <- df2 <- NULL
+  df <- d2 <- particip <- ds0 <- ds <- matr <- df2 <- subject_ID <- summary_type <- NULL
   period <- tbl_df(period)
   #period$summary_duration_h <- lubridate::hours(period$summary_duration_h)
 
@@ -38,14 +38,14 @@ deagg <-  function(period){ #deaggregation
   #period$summary_duration_h[is.na(period$summary_duration_h)] <- as.numeric(difftime(period$summary_end_datime[is.na(period$summary_duration_h)],  period$summary_start_datime[is.na(period$summary_duration_h)], units="hours"))
   #period$summary_end_datime[is.na(period$summary_duration_h)] -  period$summary_start_datime[is.na(period$summary_duration_h)]
 
-  particip <- as.vector(t(dplyr::distinct(period, actigraphy_file)))
+  particip <- as.vector(t(dplyr::distinct(period, subject_ID))) #actigraphy_file
 
   for (ii in 1 : length(particip)){
+    ds0 <- ds <- matr <- NULL
+    ds0 <- dplyr::tbl_df(filter(period, subject_ID == particip[ii], summary_type %in% c("first", "time_to_time")))
+    ds <- dplyr::tbl_df(filter(period, subject_ID == particip[ii], summary_type %in% c("sequential", "daily"))) #daily and sequential
 
-    ds0 <- dplyr::tbl_df(filter(period, actigraphy_file == particip[ii], summary_type %in% c("first", "time_to_time")))
-    ds <- dplyr::tbl_df(filter(period, actigraphy_file == particip[ii], summary_type %in% c("sequential", "daily"))) #daily and sequential
-
-
+  if(nrow(ds) > 0){
     for (ll in 1 : nrow(ds)){
       dsl <- ds[ll,]
 
@@ -64,20 +64,13 @@ deagg <-  function(period){ #deaggregation
           }
       else matr <- rbind(matr, dsl)
       }
-
-    #ll <- list(ds0, matr)
-    #all <- data.table::rbindlist(ll, use.names = TRUE, fill = TRUE, idcol=FALSE)
-    #ds0$summary_duration_h <- hms(ds0$summary_duration_h)
-    #rbind(ds0, matr)
-    df <- dplyr::bind_rows(ds0, matr)
-
-    #alist <- list(ds0, matr)
-    #ddtt <- data.table::rbindlist(alist, use.names = TRUE, fill = FALSE, idcol=FALSE)
+    }
+    df <- dplyr::bind_rows(ds0, matr, df)
 
   }
 
- df2 = dplyr::bind_rows(df, df2)
- df2$summary_duration_h <- lubridate::seconds_to_period(df2$summary_duration_h)
- df2
+
+ df$summary_duration_h <- df$summary_duration_h/3600
+ df
 }
 

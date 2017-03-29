@@ -18,6 +18,7 @@
 #' @importFrom dplyr tbl_df filter
 #'
 portion <- function(x, from , to , ...){ #all = TRUE,
+  int <- NULL
   x <- tbl_df(x)
   part <- length(unique(x$subject_ID))
   #part <- as.matrix (distinct(x, x$subject_ID) ) #participant
@@ -58,9 +59,11 @@ portion <- function(x, from , to , ...){ #all = TRUE,
 #' @importFrom dplyr select
 
 # Slice a data.frame with overlaps
-portion_withoverlaps <- function(x, from , to , ...){
+portion_withoverlaps <- function(x, from , to , tz = "UTC", ...){
+  int <- NULL
   x <- tbl_df(x)
   x$int <- lubridate::interval(x$datime_start,x$datime_end)
+#x <- x[!is.na(x$int),]
   part <- as.vector(unique(x$subject_ID))
   #part <- as.matrix (distinct(x, x$subject_ID) ) #participant
   mat2 <-  NULL
@@ -68,20 +71,13 @@ portion_withoverlaps <- function(x, from , to , ...){
   if(length(from) != length(to))
     stop("the variables from and to must have same length ")
 
-  if (length(part) > length(from)) {
-  from <- rep(from, length(part))
-  to <- rep(to, length(part)) }
-      
   for (i in 1 : length(part)){
-    int2 <- lubridate::interval(from[i], to[i])
+    int2 <- lubridate::interval(from[i], to[i], tz = tz)
 
-    mat <- dplyr::filter(x, x$subject_ID == part[[i]], lubridate::int_overlaps(int,int2)==TRUE )
+    mat <- dplyr::filter(x, x$subject_ID == part[[i]], lubridate::int_overlaps(x$int,int2) %in% c(TRUE, NA) )
     mat <- mat %>% select(-int)
     mat2 <- rbind(mat2 , mat)
     #mat2 <- na.omit(mat2)
   }
   mat2
 }
-
-
-
