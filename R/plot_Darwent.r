@@ -124,8 +124,10 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00", "#F0E4
 
 
   p <-ggplot2::ggplot() +
-    geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID),
-                 size = si) + { # adding the shade periods
+    geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID,
+                 size = interval_type)) +
+    scale_size_discrete(range = seq(si, si + length(unique(x$interval_type)) - 1,length.out = length(unique(x$interval_type)))) + { # adding the shade periods
+
 
                    if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = shadow.start,
                                                                                    xmax = shadow.end,
@@ -329,5 +331,3 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
 #head(work_dat)
 
 # EOF
-
-
