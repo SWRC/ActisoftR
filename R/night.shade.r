@@ -36,6 +36,7 @@ home.night.shade <- function(x, shadow.start = "22:00:00", shadow.end = "08:00:0
 
 
 
+
 #' Generates local night time periods
 #'
 #' This function is used by the Darwent plot
