@@ -8,6 +8,8 @@
 #' @param decal is a parameter for shifting the start date.
 #' @param export if TRUE, it will export the data as CSV.
 #' @param base matches the participants at the same start date.
+#' @param si defines the size of the geom_segment, 8 by default.
+#' @param tz is the times zone. tz = "UTC" by default.
 #' @param ... optional parameters.
 #' @return a plot.
 #'
@@ -54,8 +56,8 @@
 #' @rdname plot.Darwent
 
 
-plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, si = 8, shadow.start = "20:00:00", shadow.end = "06:00:00", tz = "UTC",...){
-  subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <- grayzone.end <- NULL
+plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, si, shadow.start = "20:00:00", shadow.end = "06:00:00", tz = "UTC",...){
+  subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <- grayzone.end <- dec <- NULL
 
   #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
@@ -70,7 +72,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   participant <- as.factor(unique(x$subject_ID))
   participant <- droplevels(participant)
 
-  if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0,part))}
+  if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0, part))}
 
   if(base == "TRUE"){ # matching the participants at the same start date
     foo <- as.data.frame(foo)
@@ -120,13 +122,18 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   }
 
 
-if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7")} # Defining the colors
+  foo$interval_type <- as.factor(as.character(foo$interval_type))
+  #foo <- arrange(foo,desc(interval_type)) #subject_ID, datime_start
 
+if(missing(acolor)) {acolor = c("#009E73","#D55E00","black", "#56B4E9","#F0E442", "#CC79A7")} # Defining the colors
+#("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7")
+if(missing(si)){ si = rep(8, part)}
 
   p <-ggplot2::ggplot() +
     geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID,
                  size = interval_type)) +
-    scale_size_discrete(range = seq(si, si + length(unique(x$interval_type)) - 1,length.out = length(unique(x$interval_type)))) + { # adding the shade periods
+    scale_size_manual(values = si)  + { #seq(si, si + length(unique(x$interval_type)) - 1,length.out = length(unique(x$interval_type))) # adding the shade periods
+    # scale_size_discrete(range = si)
 
 
                    if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = shadow.start,
@@ -331,3 +338,4 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
 #head(work_dat)
 
 # EOF
+
