@@ -71,7 +71,11 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   part <- length(unique(x$subject_ID))
   participant <- as.factor(unique(x$subject_ID))
   participant <- droplevels(participant)
-
+activ <- length(unique(x$interval_type))
+if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK" ) == FALSE) ){
+  warning("enter the argument acolor manually for each interval_type")
+ }
+  
   if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0, part))}
 
   if(base == "TRUE"){ # matching the participants at the same start date
@@ -125,16 +129,15 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   foo$interval_type <- as.factor(as.character(foo$interval_type))
   #foo <- arrange(foo,desc(interval_type)) #subject_ID, datime_start
 
-if(missing(acolor)) {acolor = c("#009E73","#D55E00","black", "#56B4E9","#F0E442", "#CC79A7")} # Defining the colors
-#("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7")
-if(missing(si)){ si = rep(8, part)}
+#if(missing(acolor)) {acolor = c("#009E73", "#D55E00", "black", "#56B4E9","#F0E442", "#CC79A7")} # Defining the colors
+#("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7" )
+if(missing(si)){ si = rep(8, activ)}
 
-  p <-ggplot2::ggplot() +
+  p <- ggplot2::ggplot() +
     geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID,
                  size = interval_type)) +
     scale_size_manual(values = si)  + { #seq(si, si + length(unique(x$interval_type)) - 1,length.out = length(unique(x$interval_type))) # adding the shade periods
     # scale_size_discrete(range = si)
-
 
                    if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = shadow.start,
                                                                                    xmax = shadow.end,
@@ -146,7 +149,9 @@ if(missing(si)){ si = rep(8, part)}
                                                            y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
                                                                                      else part_homeTZ <- NULL} +
     theme_bw() + xlab("Time") +  ylab("Participant(s)") +
-    theme_classic() +  scale_color_manual(values = acolor) +
+    theme_classic() +  
+    { if(missing(acolor)) {scale_color_manual(values = c("ACTIVE" = "#009E73", "EXCLUDED" = "#D55E00", "REST" =  "black",
+                                                     "SLEEP" = "#56B4E9", "WORK" = "#CC79A7")) } } +
     scale_fill_manual(name = "Act")
 
   # resizing the plotting area
@@ -185,6 +190,7 @@ if(missing(si)){ si = rep(8, part)}
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
     ggtitle("Darwent plot")
 }
+
 
 
 
