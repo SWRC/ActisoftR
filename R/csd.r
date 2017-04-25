@@ -39,6 +39,14 @@
 #'
 csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
   cumsum_reset <- def <- subject_ID <- period_number <- NULL
+
+
+  cumsum_res <- function(xx){
+    for (i in 1:length(xx)){ xx[i] <- ifelse( sum(xx[1:i]) < 0, xx[i], abs(sum(xx[1:i-1])))}
+    sum(xx)
+  }
+
+
   x <- x[x$with_excluded_bad == FALSE,]
   x <- x %>% left_join(baseline_sleep, by = "subject_ID")
   x$def <- x$total_sleep - x$baseline_sleep
@@ -63,7 +71,7 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
       out$total_sleep <- tab$total_sleep[j]
       out$baseline_sleep <- tab$baseline_sleep[j]
       out$def <- tab$def[j]
-      out$cumsum <- ifelse(sum(tab$def[1:j]) > 0 , 0 , sum(tab$def[1:j])) #tab$cumsum[j]
+      out$cumsum <- cumsum_res(x = tab$def[1:j]) #ifelse(sum(tab$def[1:j]) > 0 , 0 , sum(tab$def[1:j])) #tab$cumsum[j]
       out$cumsum_reset <- ifelse(j > reset, ifelse( all(tab$def[(j - reset + 1) : j] > 0) , 0, tab$cumsum_reset[j - 1] + tab$def[j]), out$cumsum)
       #out$cumsum_reset <- ifelse(j > reset, ifelse(sum(tab$def[(j - reset + 1) : j]) == 0, 0, tab$cumsum_reset[j - 1] + tab$def[j]), tab$cumsum[j])
       out2 <- rbind(out2, out)
@@ -81,7 +89,7 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
     geom_line() +
     xlab("Period number") +
     ylab("Cum sleep debt (hr)") +
-    geom_point()
+    geom_point()    + scale_x_continuous(breaks =  seq(1,max(out3$period_number),1))
 
  if(plot == TRUE){
     #x11()
@@ -89,5 +97,4 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
   }
   else return(out2)
 }
-
 
