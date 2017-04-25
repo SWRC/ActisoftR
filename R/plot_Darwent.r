@@ -61,12 +61,14 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 
   #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
   foo <- as.data.frame(x)
-  foo <- foo[!is.na(foo$datime_start),]
+  foo <- foo[!is.na(foo$datime_start),] # remove the NA's
   foo <- foo[!is.na(foo$datime_end),]
 
   foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)
   foo$datime_end = as.POSIXct(foo$datime_end, tz = tz)
 
+  foo <- arrange(foo, interval_type)
+  
   # number of participants. It defines the height of the plot
   part <- length(unique(x$subject_ID))
   participant <- as.factor(unique(x$subject_ID))
@@ -79,9 +81,9 @@ if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , 
   if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0, part))}
 
   if(base == "TRUE"){ # matching the participants at the same start date
-    foo <- as.data.frame(foo)
-    foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)
-    foo$datime_end = as.POSIXct(foo$datime_end,tz = tz)
+    #foo <- as.data.frame(foo)
+    #foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)
+    #foo$datime_end = as.POSIXct(foo$datime_end,tz = tz)
 
     foo2 <-  foo %>%
       group_by(subject_ID) %>%
@@ -117,7 +119,7 @@ if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , 
     foo <- foo4
   }
 
-
+  # to export as csv 
   if (export == TRUE){
     usef <- c("subject_ID", "datime_start", "datime_end", "interval_type")
     Darw_data <- foo[, usef]
@@ -139,11 +141,11 @@ if(missing(si)){ si = rep(8, activ)}
     scale_size_manual(values = si)  + { #seq(si, si + length(unique(x$interval_type)) - 1,length.out = length(unique(x$interval_type))) # adding the shade periods
     # scale_size_discrete(range = si)
 
-                   if(shade == TRUE) geom_rect(data = home.night.shade(x = x, shadow.start, shadow.end, ...), aes(xmin = shadow.start,
+                   if(shade == TRUE) geom_rect(data = home.night.shade(x = foo, shadow.start, shadow.end, ...), aes(xmin = shadow.start,
                                                                                    xmax = shadow.end,
                                                                                    ymin = 0, ymax = part + 0.5), alpha = 0.175, fill = "green")
                    } + {
-                  if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = x, part_homeTZ = part_homeTZ),
+                  if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = foo, part_homeTZ = part_homeTZ),
                                                        aes(colour = interval_type, x = as.POSIXct(grayzone.start,tz = tz),
                                                            xend = as.POSIXct(grayzone.end, tz = tz),
                                                            y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
@@ -193,11 +195,11 @@ if(missing(si)){ si = rep(8, activ)}
 
 
 
-
 #' Plots SLEEP intervals.
 #'
 #' @param dat a dataframe.
 #' @param acolor the color of the lines
+#' @param si defines the size of the geom_segment, 1.25 by default.
 #' @param ... Optional parameters
 #' @return a plot
 #'
@@ -223,27 +225,25 @@ if(missing(si)){ si = rep(8, activ)}
 #' @import ggplot2
 #' @rdname plot_long
 
-plot_long <- function(dat, acolor,...){
-
+plot_long <- function(dat, acolor, si, ...){
   sinceMidnight_end <- sinceMidnight_start <- interval_type <- NULL
-
   ###############################################
   # Filename: plot_long.R
   # Purpose:  Plot sleep and wake data (long)
   # Created:  2016-12-12 LJW, minor edits by ESF
-  # Updated:  2016-01-26
+  # Updated:  2016-04-24
   ###############################################
 
   # import sleep/wake data
   #dat <- read.table(file = "C:\\Users\\lwu1\\Dropbox\\ActisoftR\\EXAMPLE_DATA\\example01_AMI.txt", sep = "\t", header = TRUE, skip = 0)
-  #head(dat)
-  #str(dat)
-
   dat <- dat[!is.na(dat$datime_start),]
-
+  dat <- dat[!is.na(dat$datime_end),]
+  
+  dat <- arrange(dat, interval_type)
+  
+  
   dat$subject_ID <- gsub("_.*$", "", dat$subject_ID)
-#dat <- dat[dat$interval_type == "SLEEP", ]
-  dat <- dat[!is.na(dat$interval_number), ] # get rid of the 2x summary lines
+  #dat <- dat[!is.na(dat$interval_number), ] # get rid of the 2x summary lines
 
   # make a datetime variable
   dat$datime_start <- as.POSIXct(dat$datime_start, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
@@ -257,16 +257,13 @@ plot_long <- function(dat, acolor,...){
   dat$sinceMidnight_start <- as.numeric(difftime(dat$datime_start, trunc(dat$datime_start, "day"), units = "mins"))
   dat$sinceMidnight_end   <- as.numeric(difftime(dat$datime_end,   trunc(dat$datime_end,   "day"), units = "mins"))
 
-  #head(dat)
-  #str(dat)
-
   # how many go across midnight? 17/34
   dat %>% filter(sinceMidnight_end < sinceMidnight_start)
 
 #if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the color
 if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Defining the colors
-
-
+activ <- length(unique(dat$interval_type))
+  if(missing(si)){ si = rep(1.25, activ)}
   p <- ggplot(data = dat)
   # plot only the easy ones
   #p <- p + geom_segment(aes(x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence), colour = interval_type, size = 1.25, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))
@@ -274,13 +271,14 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
   #p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence), size = 8, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))
 
   if(nrow(dat %>% filter(sinceMidnight_end > sinceMidnight_start)) > 0){
-  p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence),  size = 1.25, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))}
+  p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))}
   # plot the x-midnight segments in 2 goes: one for the bit between sleep start and midnight
   if(nrow(dat %>% filter(sinceMidnight_end < sinceMidnight_start)) > 0){
-  p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = 1440, y = sequence, yend = sequence), size = 1.25, data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))
+  p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = 1440, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))
   # second bit for midnight until sleep offset
-  p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1), size = 1.25, data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))}
+  p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1, size = interval_type), data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))}
 
+  p <- p + scale_size_manual(values = si)
   # flip it upside down so newest dates are on the top of the figure
   p <- p + scale_y_reverse()
   p <- p + theme_bw()
@@ -298,8 +296,11 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
     axis.title.x = element_text(size = 10, colour = "black", face = "bold", margin = margin(10, 0, 0, 0, unit = "points")),
     axis.text  = element_text(size = 10, colour = "black", face = "bold")) # make y axis text pretty
 
-  x11()
+  #x11()
   p
+  
+}
+
 
   #dev.new()
   #resize.win <- function(Width = 12, Height = 5){dev.off();
@@ -337,11 +338,11 @@ if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Def
   #work_dat$end_datime   <- as.POSIXct(work_dat$end_datime, format = "%d/%m/%Y %H:%M", tz = "UTC")
   #work_dat$type <- as.factor("work")
 
-}
 
 # save an output
 #ggsave(filename = "C:\\1\\long.png", plot = p, width = 25, height = 20, units = c("cm") )
 #head(work_dat)
 
 # EOF
+
 
