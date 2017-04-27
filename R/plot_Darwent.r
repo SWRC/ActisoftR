@@ -68,7 +68,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   foo$datime_end = as.POSIXct(foo$datime_end, tz = tz)
 
   foo <- arrange(foo, interval_type)
-  
+
   # number of participants. It defines the height of the plot
   part <- length(unique(x$subject_ID))
   participant <- as.factor(unique(x$subject_ID))
@@ -77,7 +77,7 @@ activ <- length(unique(x$interval_type))
 if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK" ) == FALSE) ){
   warning("enter the argument acolor manually for each interval_type")
  }
-  
+
   if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0, part))}
 
   if(base == "TRUE"){ # matching the participants at the same start date
@@ -119,7 +119,7 @@ if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , 
     foo <- foo4
   }
 
-  # to export as csv 
+  # to export as csv
   if (export == TRUE){
     usef <- c("subject_ID", "datime_start", "datime_end", "interval_type")
     Darw_data <- foo[, usef]
@@ -151,7 +151,7 @@ if(missing(si)){ si = rep(8, activ)}
                                                            y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
                                                                                      else part_homeTZ <- NULL} +
     theme_bw() + xlab("Time") +  ylab("Participant(s)") +
-    theme_classic() +  
+    theme_classic() +
     { if(missing(acolor)) {scale_color_manual(values = c("ACTIVE" = "#009E73", "EXCLUDED" = "#D55E00", "REST" =  "black",
                                                      "SLEEP" = "#56B4E9", "WORK" = "#CC79A7")) } } +
     scale_fill_manual(name = "Act")
@@ -200,6 +200,8 @@ if(missing(si)){ si = rep(8, activ)}
 #' @param dat a dataframe.
 #' @param acolor the color of the lines
 #' @param si defines the size of the geom_segment, 1.25 by default.
+#' @param tz the time zone
+#' @param tz2 and additional time zone.
 #' @param ... Optional parameters
 #' @return a plot
 #'
@@ -212,6 +214,8 @@ if(missing(si)){ si = rep(8, activ)}
 #' fil <- dplyr::select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
 #' #dat <- read.csv("C:\\1\\EXAMPLE_DATA\\AMI\\example01_AMI.csv")
 #' plot_long (dat = fil)
+#' # x-axis time modified based on a second time zone.
+#' plot_long (dat = fil, tz2 = "EST")
 
 #' # Example 2
 #' fil2 <- dplyr::filter(acti_data, subject_ID=="participant01")
@@ -225,7 +229,7 @@ if(missing(si)){ si = rep(8, activ)}
 #' @import ggplot2
 #' @rdname plot_long
 
-plot_long <- function(dat, acolor, si, ...){
+plot_long <- function(dat, acolor, si, tz = "UTC", tz2,...){
   sinceMidnight_end <- sinceMidnight_start <- interval_type <- NULL
   ###############################################
   # Filename: plot_long.R
@@ -238,10 +242,8 @@ plot_long <- function(dat, acolor, si, ...){
   #dat <- read.table(file = "C:\\Users\\lwu1\\Dropbox\\ActisoftR\\EXAMPLE_DATA\\example01_AMI.txt", sep = "\t", header = TRUE, skip = 0)
   dat <- dat[!is.na(dat$datime_start),]
   dat <- dat[!is.na(dat$datime_end),]
-  
   dat <- arrange(dat, interval_type)
-  
-  
+
   dat$subject_ID <- gsub("_.*$", "", dat$subject_ID)
   #dat <- dat[!is.na(dat$interval_number), ] # get rid of the 2x summary lines
 
@@ -283,9 +285,33 @@ activ <- length(unique(dat$interval_type))
   p <- p + scale_y_reverse()
   p <- p + theme_bw()
   p <- p + ggtitle(gsub("_.*$", "", dat$subject_ID))
-  p <- p + labs(x = "Sleep", y = "Days")
-  p <- p + scale_x_continuous(limits = c(0, 1440), breaks = seq(0, 1440, 360),
-                              expand = c(0, 0), labels = c("00:00", "06:00", "12:00", "18:00", "00:00"))
+  p <- p + labs(x = "Time", y = "Days") #Sleep
+
+  b <- c("00:00", "06:00", "12:00", "18:00", "24:00")
+  b <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz)
+  b <- format(b, format="%H:%M", usetz = TRUE, tz = tz)
+
+  #text0 = textGrob("(UTC)", gp = gpar(cex = .75))
+  #p <- p + annotation_custom(grob = text0,  xmin = 1550, xmax = 1650, ymin = -as.numeric(max(dat$sequence) + 2.5), ymax = -as.numeric(max(dat$sequence) + 2.5)  )  #-26.5
+  if(missing(tz2)){labs  = b}
+
+  else{ b2 <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz) #"EST"
+  b2EST <- with_tz(b2, tz = tz2)
+  hmEST <- format(b2EST, format="%H:%M", usetz = TRUE)
+  labs <- paste(b, hmEST, sep = "\n")
+  #text2 = textGrob(paste("(",tz2, ")"), gp = gpar(cex = .75))
+  #p <- p +  annotation_custom(grob = text2,  xmin = 1550, xmax = 1650, ymin = -1.15 * max(dat$sequence) , ymax = -1.15 * max(dat$sequence)) # as.numeric(max(dat$sequence) + 3.5) -27.5
+  }
+
+  #p <- p + scale_x_continuous(limits = c(0, 1440),  #                            breaks = seq(0, 1440, 360),
+  #                            expand = c(0, 0),  #                            labels = c("00:00", "06:00", "12:00", "18:00", "00:00"))
+
+
+  p <- p + scale_x_continuous(limits = c(0, 1440),
+                              breaks = seq(0, 1440, 360),
+                              expand = c(0, 0),
+                              labels = labs)
+
   p <- p + scale_color_manual(values = acolor)
   p <- p + theme(
     strip.background = element_blank(),
@@ -296,11 +322,15 @@ activ <- length(unique(dat$interval_type))
     axis.title.x = element_text(size = 10, colour = "black", face = "bold", margin = margin(10, 0, 0, 0, unit = "points")),
     axis.text  = element_text(size = 10, colour = "black", face = "bold")) # make y axis text pretty
 
-  #x11()
-  p
-  
-}
+# adding text ouside of the plotting area
+#  p2 <- ggplotGrob(p)
+#  p2$layout$clip[p2$layout$name == "panel"] <- "off"
+#  grid.draw(p2)
 
+  x11()
+  p
+
+}
 
   #dev.new()
   #resize.win <- function(Width = 12, Height = 5){dev.off();
@@ -344,5 +374,3 @@ activ <- length(unique(dat$interval_type))
 #head(work_dat)
 
 # EOF
-
-
