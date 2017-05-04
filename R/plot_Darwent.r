@@ -195,15 +195,17 @@ if(missing(si)){ si = rep(8, activ)}
 
 
 
-#' Plots SLEEP intervals.
+#' Plots activity intervals (SLEEP, REST, ACTIVE, etc) in 24 hour sections.
 #'
 #' @param dat a dataframe.
-#' @param acolor the color of the lines
+#' @param acolor the color of the lines.
 #' @param si defines the size of the geom_segment, 1.25 by default.
-#' @param tz the time zone
+#' @param tz the time zone.
 #' @param tz2 and additional time zone.
-#' @param ... Optional parameters
-#' @return a plot
+#' @param sp the starting point in the x-axis. Set as 00:00:00 by default.
+#' @param with_date allows adding the cutpoint data to the y-axis. with_date = FALSE by default.
+#' @param ... Optional parameters.
+#' @return a plot.
 #'
 #' @examples
 #' # Example 1
@@ -213,13 +215,20 @@ if(missing(si)){ si = rep(8, activ)}
 #' fil <- dplyr::tbl_df(fil)
 #' fil <- dplyr::select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
 #' #dat <- read.csv("C:\\1\\EXAMPLE_DATA\\AMI\\example01_AMI.csv")
-#' plot_long (dat = fil)
-#' # x-axis time modified based on a second time zone.
+#' plot_long(dat = fil)
+#' # adding a second time zone times in the x-axis.
 #' plot_long (dat = fil, tz2 = "EST")
-
-#' # Example 2
+#' # starting on x-axis at 06:00:00.
+#' plot_long (dat = fil, sp = "06:00:00")
+#'
+#'# showing the date on the y-axis along with the sequence
+#' plot_long (dat = fil, tz2 = "Pacific/Auckland", with_date = TRUE)
+#'
+#'
+#' # Example 2: plotting all the interval_types
 #' fil2 <- dplyr::filter(acti_data, subject_ID=="participant01")
-#' plot_long (dat = fil2)
+#' plot_long(dat = fil2, si = c(4,3,2,1.5), with_date = TRUE)
+#' plot_long(dat = fil2, si = c(4,3,2,1.5), tz2 = "Pacific/Auckland", sp = "06:00:00", with_date = TRUE)
 
 #' @export
 #' @importFrom grDevices dev.new dev.off x11 windows
@@ -229,17 +238,14 @@ if(missing(si)){ si = rep(8, activ)}
 #' @import ggplot2
 #' @rdname plot_long
 
-plot_long <- function(dat, acolor, si, tz = "UTC", tz2,...){
-  sinceMidnight_end <- sinceMidnight_start <- interval_type <- NULL
+plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_date = FALSE, ...) {
+  sinceMidnight_end <- sinceMidnight_start <- interval_type <- dat3 <- dat4 <- dat5 <- dat6 <- NULL
   ###############################################
   # Filename: plot_long.R
   # Purpose:  Plot sleep and wake data (long)
-  # Created:  2016-12-12 LJW, minor edits by ESF
-  # Updated:  2016-04-24
+  # Created:  2016-12-12 LJW, edits by ESF
+  # Updated:  2016-04-28
   ###############################################
-
-  # import sleep/wake data
-  #dat <- read.table(file = "C:\\Users\\lwu1\\Dropbox\\ActisoftR\\EXAMPLE_DATA\\example01_AMI.txt", sep = "\t", header = TRUE, skip = 0)
   dat <- dat[!is.na(dat$datime_start),]
   dat <- dat[!is.na(dat$datime_end),]
   dat <- arrange(dat, interval_type)
@@ -250,21 +256,55 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2,...){
   # make a datetime variable
   dat$datime_start <- as.POSIXct(dat$datime_start, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
   dat$datime_end <- as.POSIXct(dat$datime_end, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-  #dat$datime_end   <- as.POSIXct(paste(as.POSIXct(strptime(dat$edate, format = "%d/%m/%Y"), tz = "UTC"), dat$etime), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-
-  # extract the date and make into factor counter
-  dat$sequence <- as.numeric(factor(as.Date(dat$datime_start)))
 
   # make time into mins since midnight - make the sleeps that cross midnight plot across 2 lines
-  dat$sinceMidnight_start <- as.numeric(difftime(dat$datime_start, trunc(dat$datime_start, "day"), units = "mins"))
-  dat$sinceMidnight_end   <- as.numeric(difftime(dat$datime_end,   trunc(dat$datime_end,   "day"), units = "mins"))
 
-  # how many go across midnight? 17/34
-  dat %>% filter(sinceMidnight_end < sinceMidnight_start)
+  dat$trun_start <- as.POSIXct(paste(trunc(dat$datime_start, "day"), sp),format = "%Y-%m-%d %H:%M:%S", tz = tz)
+  dat$trun_end <- as.POSIXct(paste(trunc(dat$datime_end, "day"), sp),format = "%Y-%m-%d %H:%M:%S", tz = tz)
 
-#if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the color
-if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00")} # Defining the colors
-activ <- length(unique(dat$interval_type))
+  # extract the date and make into factor counter: This is not working for cases where the REST/SLEEP occurs after midnight
+
+  df_seq <- data.frame(seqDates = seq.POSIXt(min(dat$trun_start), max(dat$trun_end ),  by = "day"),
+                       sequence = 1 : length(seq.POSIXt(min(dat$trun_start), max(dat$trun_end),  by = "day")))
+
+  dat <- dat %>% left_join(df_seq, c("trun_start" = "seqDates"))
+
+  dat$sinceMidnight_start <- as.numeric(difftime(dat$datime_start, dat$trun_start , units = "mins"))
+  dat$sinceMidnight_end   <- as.numeric(difftime(dat$datime_end, dat$trun_end , units = "mins")) #trunc(dat$datime_end,   "day")
+
+  dat[dat$sinceMidnight_start < 0,]$sequence <- dat[dat$sinceMidnight_start < 0,]$sequence - 1
+
+  # adjusting the negative intervals.
+  if(nrow(filter(dat, sinceMidnight_start < 0)) > 0){
+    dat2 <- filter(dat, sinceMidnight_start < 0)
+
+    if(nrow(filter(dat2, sinceMidnight_end <= 0)) > 0) {
+      dat3 <- filter(dat2, sinceMidnight_end <= 0)
+      dat3$sinceMidnight_start <- dat3$sinceMidnight_start + 1440
+      dat3$sinceMidnight_end <- dat3$sinceMidnight_end + 1440   }
+
+    if(nrow(filter(dat2, sinceMidnight_end > 0)) > 0) {
+      dat4 <- filter(dat2, sinceMidnight_end > 0)
+      dat5 <- dat4
+      dat5$sinceMidnight_start = 1440 + dat5$sinceMidnight_start
+      dat5$sinceMidnight_end = 1440
+
+      dat4$sinceMidnight_start <- 0
+      dat4$sequence <- dat4$sequence + 1  }
+    dat6 <- rbind(dat3, dat4, dat5)
+    dat <- dat[dat$sinceMidnight_start >= 0,]
+    dat <- rbind(dat, dat6)
+  }
+
+  dat[dat$sinceMidnight_start > 0 & dat$sinceMidnight_end < 0,]$sinceMidnight_end <- 1440 +
+    dat[dat$sinceMidnight_start > 0 & dat$sinceMidnight_end < 0,]$sinceMidnight_end
+
+  dat <- arrange(dat, interval_type)
+
+  #dat %>% filter(sinceMidnight_end < sinceMidnight_start)
+  #if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the color
+  if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7")}  # Defining the colors
+  activ <- length(unique(dat$interval_type))
   if(missing(si)){ si = rep(1.25, activ)}
   p <- ggplot(data = dat)
   # plot only the easy ones
@@ -272,45 +312,56 @@ activ <- length(unique(dat$interval_type))
   #p <- p + geom_segment(aes(x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence), size = 8, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))
   #p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence), size = 8, data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))
 
-  if(nrow(dat %>% filter(sinceMidnight_end > sinceMidnight_start)) > 0){
-  p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_end > sinceMidnight_start))}
+  if(nrow(dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start)) > 0){
+    p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start))}
   # plot the x-midnight segments in 2 goes: one for the bit between sleep start and midnight
-  if(nrow(dat %>% filter(sinceMidnight_end < sinceMidnight_start)) > 0){
-  p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = 1440, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))
-  # second bit for midnight until sleep offset
-  p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1, size = interval_type), data = dat %>% filter(sinceMidnight_end < sinceMidnight_start))}
+  if(nrow(dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start)) > 0){
+    p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = 1440, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start))
+    # second bit for midnight until sleep offset
+    p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start))}
+
+  # plotting the negative intervals
+  #  if(nrow(dat %>% filter(sinceMidnight_start < 0 & sinceMidnight_end <= 0)) > 0){
+  #    p <- p + geom_segment(aes(colour = interval_type, x = 1440 + sinceMidnight_start, xend = 1440 + sinceMidnight_end, y = sequence , yend = sequence , size = interval_type), data = dat %>% filter(sinceMidnight_start < 0 & sinceMidnight_end <= 0))  #  }
+
+  #  if(nrow(dat %>% filter(sinceMidnight_start < 0 & sinceMidnight_end > 0)) > 0){
+  #    dats <- dat %>% filter(sinceMidnight_start < 0 & sinceMidnight_end > 0)
+  #    dats <- arrange(dats, interval_type, sinceMidnight_end)
+  #    p <- p + geom_segment(aes(colour = interval_type, x = 1440 + sinceMidnight_start, xend = 1440, y = sequence, yend = sequence, size = interval_type), data = dats ) # %>% arrange( interval_type)sinceMidnight_start, interval_number, - 1 - 1
+  #    p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1, size = interval_type), data = dats ) # %>% arrange(interval_type) sinceMidnight_start,  interval_number,  #  }
 
   p <- p + scale_size_manual(values = si)
   # flip it upside down so newest dates are on the top of the figure
-  p <- p + scale_y_reverse()
   p <- p + theme_bw()
   p <- p + ggtitle(gsub("_.*$", "", dat$subject_ID))
   p <- p + labs(x = "Time", y = "Days") #Sleep
 
-  b <- c("00:00", "06:00", "12:00", "18:00", "24:00")
-  b <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz)
+  b <-  seq.POSIXt(dat$trun_start[1], dat$trun_start[1] + hours(24),  length.out = 5) #c("00:00", "06:00", "12:00", "18:00", "24:00")
+  #b <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz)
   b <- format(b, format="%H:%M", usetz = TRUE, tz = tz)
 
   #text0 = textGrob("(UTC)", gp = gpar(cex = .75))
   #p <- p + annotation_custom(grob = text0,  xmin = 1550, xmax = 1650, ymin = -as.numeric(max(dat$sequence) + 2.5), ymax = -as.numeric(max(dat$sequence) + 2.5)  )  #-26.5
-  if(missing(tz2)){labs  = b}
 
+  if(missing(tz2)){labs = b}
   else{ b2 <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz) #"EST"
   b2EST <- with_tz(b2, tz = tz2)
   hmEST <- format(b2EST, format="%H:%M", usetz = TRUE)
   labs <- paste(b, hmEST, sep = "\n")
-  #text2 = textGrob(paste("(",tz2, ")"), gp = gpar(cex = .75))
-  #p <- p +  annotation_custom(grob = text2,  xmin = 1550, xmax = 1650, ymin = -1.15 * max(dat$sequence) , ymax = -1.15 * max(dat$sequence)) # as.numeric(max(dat$sequence) + 3.5) -27.5
+
   }
 
-  #p <- p + scale_x_continuous(limits = c(0, 1440),  #                            breaks = seq(0, 1440, 360),
-  #                            expand = c(0, 0),  #                            labels = c("00:00", "06:00", "12:00", "18:00", "00:00"))
+  p <- p + scale_x_continuous(limits = c(0, 1440), breaks = seq(0, 1440, 360),
+                              expand = c(0, 0),labels = labs)
 
+  # adding date info in y axis
+  bys <- unique(df_seq$sequence) #unique(dat$sequence)
+  if(with_date==FALSE ){labs2  = bys}
+  else{labs2 <- paste(bys, unique(df_seq$seqDates), sep = " ") }  #dat$trun_start
 
-  p <- p + scale_x_continuous(limits = c(0, 1440),
-                              breaks = seq(0, 1440, 360),
-                              expand = c(0, 0),
-                              labels = labs)
+  #p <- p + scale_y_continuous(limits = c(min(bys), max(bys)), breaks = seq(min(bys), max(bys), 1), expand = c(0, 0), labels = labs2)
+
+  p <- p + scale_y_reverse(breaks = unique(df_seq$sequence) , labels = labs2) #breaks =  seq(1,max(dat$sequence)+1,1)      scale_y_continuous(breaks =  seq(1,max(dat$sequence),1))
 
   p <- p + scale_color_manual(values = acolor)
   p <- p + theme(
@@ -322,20 +373,10 @@ activ <- length(unique(dat$interval_type))
     axis.title.x = element_text(size = 10, colour = "black", face = "bold", margin = margin(10, 0, 0, 0, unit = "points")),
     axis.text  = element_text(size = 10, colour = "black", face = "bold")) # make y axis text pretty
 
-# adding text ouside of the plotting area
-#  p2 <- ggplotGrob(p)
-#  p2$layout$clip[p2$layout$name == "panel"] <- "off"
-#  grid.draw(p2)
-
-  x11()
   p
 
 }
 
-  #dev.new()
-  #resize.win <- function(Width = 12, Height = 5){dev.off();
-  #  dev.new(record = TRUE, width = Width, height = Height)}
-  #resize.win(14, 5)
 
   ## add work periods
   #work_dat <- read.table(header = TRUE, sep = "\t",
@@ -361,16 +402,9 @@ activ <- length(unique(dat$interval_type))
   #                       example01	28/07/2016 10:00	28/07/2016 18:00
   #                       example01	29/07/2016 10:00	29/07/2016 18:00")
 
-  #str(work_dat)
-
   # make a datetime variable
   #work_dat$start_datime <- as.POSIXct(work_dat$start_datime, format = "%d/%m/%Y %H:%M", tz = "UTC")
   #work_dat$end_datime   <- as.POSIXct(work_dat$end_datime, format = "%d/%m/%Y %H:%M", tz = "UTC")
   #work_dat$type <- as.factor("work")
-
-
-# save an output
-#ggsave(filename = "C:\\1\\long.png", plot = p, width = 25, height = 20, units = c("cm") )
-#head(work_dat)
-
 # EOF
+
