@@ -10,6 +10,7 @@
 #' @param base matches the participants at the same start date.
 #' @param si defines the size of the geom_segment, 8 by default.
 #' @param tz is the times zone. tz = "UTC" by default.
+#' @param tz2 an additional time zone used for a secondary x-axis.
 #' @param ... optional parameters.
 #' @return a plot.
 #'
@@ -18,6 +19,8 @@
 #' library("dplyr")
 #' fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph_brand == "Actiware")
 #' plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day")
+#' # adding a secondary x-axis on top
+#' plot_Darwent(x = fil, shade = FALSE, datebreaks = "18 hour", tz2 = "Asia/Kathmandu")
 #' # Example # 2
 #' # using flight data
 #' flight <- read.csv(file = 'C:\\1\\EXAMPLE_DATA\\Work\\work.csv', sep = ",",header = TRUE, skip = 0)
@@ -56,34 +59,35 @@
 #' @rdname plot.Darwent
 
 
-plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE, si, shadow.start = "20:00:00", shadow.end = "06:00:00", tz = "UTC",...){
-  subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <- grayzone.end <- dec <- NULL
+plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", 
+                         base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE,
+                          si, shadow.start = "20:00:00", shadow.end = "06:00:00", tz = "UTC", tz2,...){
 
-  #part_homeTZ <- interval_type <- grayzone.start <- grayzone.end <- subject_ID <- NULL
+  subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <-
+    grayzone.end <- dec <- NULL
+
   foo <- as.data.frame(x)
-  foo <- foo[!is.na(foo$datime_start),] # remove the NA's
+  foo <- foo[!is.na(foo$datime_start),] # remove the datime_start = NA's
   foo <- foo[!is.na(foo$datime_end),]
 
   foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)
   foo$datime_end = as.POSIXct(foo$datime_end, tz = tz)
 
+  foo$interval_type <- toupper(foo$interval_type)
   foo <- arrange(foo, interval_type)
 
   # number of participants. It defines the height of the plot
   part <- length(unique(x$subject_ID))
   participant <- as.factor(unique(x$subject_ID))
   participant <- droplevels(participant)
-activ <- length(unique(x$interval_type))
-if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK" ) == FALSE) ){
-  warning("enter the argument acolor manually for each interval_type")
- }
+  activ <- length(unique(x$interval_type))
+  if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK" ) == FALSE) ){
+    warning("enter the argument acolor manually for each interval_type")
+  }
 
   if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0, part))}
 
   if(base == "TRUE"){ # matching the participants at the same start date
-    #foo <- as.data.frame(foo)
-    #foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)
-    #foo$datime_end = as.POSIXct(foo$datime_end,tz = tz)
 
     foo2 <-  foo %>%
       group_by(subject_ID) %>%
@@ -129,64 +133,79 @@ if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , 
 
 
   foo$interval_type <- as.factor(as.character(foo$interval_type))
-  #foo <- arrange(foo,desc(interval_type)) #subject_ID, datime_start
 
 #if(missing(acolor)) {acolor = c("#009E73", "#D55E00", "black", "#56B4E9","#F0E442", "#CC79A7")} # Defining the colors
 #("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7" )
-if(missing(si)){ si = rep(8, activ)}
+  if(missing(si)){ si = rep(8, activ)}
 
   p <- ggplot2::ggplot() +
-    geom_segment(data = foo, aes(colour = interval_type, x = datime_start, xend = datime_end, y = subject_ID, yend = subject_ID,
-                 size = interval_type)) +
-    scale_size_manual(values = si)  + { #seq(si, si + length(unique(x$interval_type)) - 1,length.out = length(unique(x$interval_type))) # adding the shade periods
-    # scale_size_discrete(range = si)
-
-                   if(shade == TRUE) geom_rect(data = home.night.shade(x = foo, shadow.start, shadow.end, ...), aes(xmin = shadow.start,
-                                                                                   xmax = shadow.end,
-                                                                                   ymin = 0, ymax = part + 0.5), alpha = 0.175, fill = "green")
-                   } + {
-                  if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = foo, part_homeTZ = part_homeTZ),
-                                                       aes(colour = interval_type, x = as.POSIXct(grayzone.start,tz = tz),
-                                                           xend = as.POSIXct(grayzone.end, tz = tz),
-                                                           y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
-                                                                                     else part_homeTZ <- NULL} +
-    theme_bw() + xlab("Time") +  ylab("Participant(s)") +
+    geom_segment(data = foo, aes(colour = interval_type, x = as.numeric(datime_start), xend = as.numeric(datime_end),
+                                 y = subject_ID, yend = subject_ID, size = interval_type)) +
+    scale_size_manual(values = si)  + {
+    # home night shade
+    if(shade == TRUE) geom_rect(data = home.night.shade(x = foo, shadow.start, shadow.end, ...),
+                                aes(xmin = as.numeric(shadow.start), xmax = as.numeric(shadow.end), ymin = 0,
+                                    ymax = part + 0.5), alpha = 0.175, fill = "green") } + {
+    # local night shade
+    if(local.shade == TRUE) {geom_segment(data = local.night.shade(x = foo, part_homeTZ = part_homeTZ),
+                                aes(colour = interval_type, x = as.numeric(as.POSIXct(grayzone.start,tz = tz)),
+                                xend = as.numeric(as.POSIXct(grayzone.end, tz = tz)),
+                                y = subject_ID, yend = subject_ID), size = 12, col = "black",
+                                alpha = 0.22)}
+    else part_homeTZ <- NULL} +
+    theme_bw() + xlab(paste("Time in", tz)) +  ylab("Participant(s)") +
     theme_classic() +
-    { if(missing(acolor)) {scale_color_manual(values = c("ACTIVE" = "#009E73", "EXCLUDED" = "#D55E00", "REST" =  "black",
+    {if(missing(acolor)) {scale_color_manual(values = c("ACTIVE" = "#009E73", "EXCLUDED" = "#D55E00", "REST" =  "black",
                                                      "SLEEP" = "#56B4E9", "WORK" = "#CC79A7")) } } +
     scale_fill_manual(name = "Act")
 
-  # resizing the plotting area
 
   if(show_plot == TRUE){
-  x11() #dev.new()
-  resize.win <- function(Width = 12, Height = 5){dev.off();
-    dev.new(record = TRUE, width = Width, height = Height)}
-  resize.win(14, 2 * part)
+  #x11() #dev.new()
+  # resizing the plotting area
+  #resize.win <- function(Width = 12, Height = 5){dev.off();
+  #  dev.new(record = TRUE, width = Width, height = Height)}
+  #resize.win(14, 2 * part)
 
-  p + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
-                       minor_breaks = date_breaks(datebreaks),
-                       labels = date_format("%H:%M", #"%y-%m-%d %H.%M"
-                                            tz = tz)) +
-    theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
+  # additional x-axis does not work with scale_x_datetime
+  # p <- p + scale_x_datetime(breaks = date_breaks(datebreaks),
+  #                     minor_breaks = date_breaks(datebreaks),
+  #                     labels = date_format("%H:%M", tz = tz))
+
+  x_axis_lab <- seq.POSIXt(floor_date(min(foo$datime_start), unit = "day"),
+             ceiling_date(max(foo$datime_start), unit = "day"), by = datebreaks)
+
+  x_axis_lab_num <- as.integer(as.numeric(x_axis_lab))
+
+  p <- p + { if(!missing(tz2) == TRUE) scale_x_continuous(paste("Time in", tz), breaks = x_axis_lab_num,
+              labels = format(x_axis_lab, format = "%H:%M", tz = tz),
+              sec.axis = sec_axis(~ . + 0, breaks = x_axis_lab_num,
+              labels = format(with_tz(x_axis_lab, tz = tz2),
+              format = "%H:%M"), name = paste("Time in", tz2)) ) } + {
+
+  if(missing(tz2) == TRUE) scale_x_continuous(paste("Time in", tz), breaks = x_axis_lab_num,
+                                                             labels = format(x_axis_lab, format = "%H:%M", tz = tz) ) }
+
+  # data$num <- as.numeric(data$datetime)
+  # scale_x_continuous("UTC", breaks = data$num, labels = data$datetime, sec.axis = sec_axis(~ . + 0, breaks = data$num, labels = with_tz(data$datetime, tz ="EST"), name = "EST"))
+  #
+
+  p <- p +  theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
     theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
-    theme(plot.title = element_text(color = "black",
-                                    size = 18,
-                                    hjust = 0.5)) +
+    theme(plot.title = element_text(color = "black", size = 18, hjust = 0.5)) +
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
     ggtitle("Darwent plot")
+  p
 
   }
 
   else
-    p + scale_x_datetime(breaks = date_breaks(datebreaks),  # scale_x_datetime "12 hour" or "1 day"
-                         minor_breaks = date_breaks(datebreaks),
-                         labels = date_format("%H:%M", # "%y-%m-%d %H.%M"
-                                              tz = tz)) +
+    p + scale_x_continuous(paste("Time in", tz), breaks = x_axis_lab_num,
+                           labels = format(x_axis_lab, format = "%H:%M", tz = tz) ) + #scale_x_datetime(breaks = date_breaks(datebreaks),
+      #minor_breaks = date_breaks(datebreaks), labels = date_format("%H:%M", tz = tz)) +
     theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
     theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
     theme(plot.title = element_text(color = "black",
-                                    #face = 'bold',
                                     size = 18,
                                     hjust = 0.5)) +
     theme(panel.grid.major.x = element_line(colour = 'gray', size = 0.1 )) +
@@ -201,7 +220,7 @@ if(missing(si)){ si = rep(8, activ)}
 #' @param acolor the color of the lines.
 #' @param si defines the size of the geom_segment, 1.25 by default.
 #' @param tz the time zone.
-#' @param tz2 and additional time zone.
+#' @param tz2 an additional time zone.
 #' @param sp the starting point in the x-axis. Set as 00:00:00 by default.
 #' @param with_date allows adding the cutpoint data to the y-axis. with_date = FALSE by default.
 #' @param ... Optional parameters.
@@ -407,4 +426,6 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   #work_dat$end_datime   <- as.POSIXct(work_dat$end_datime, format = "%d/%m/%Y %H:%M", tz = "UTC")
   #work_dat$type <- as.factor("work")
 # EOF
+
+
 
