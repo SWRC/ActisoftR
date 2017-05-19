@@ -88,7 +88,7 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
  p <- ggplot2::ggplot(data = out3, aes(colour = subject_ID, x = period_number, y = cumsum_reset,
                           group = subject_ID)) +
     geom_line() +
-    xlab("Period number") + ylab("Cum sleep debt (hr)") +
+    xlab("Period number") + ylab("Cum sleep debt (in minutes)") +
     geom_point()    + scale_x_continuous(breaks =  seq(1,max(out3$period_number),1))
 
  if(plot == TRUE){
