@@ -59,7 +59,7 @@
 #' @rdname plot.Darwent
 
 
-plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour", 
+plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour",
                          base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE,
                           si, shadow.start = "20:00:00", shadow.end = "06:00:00", tz = "UTC", tz2,...){
 
@@ -81,7 +81,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   participant <- as.factor(unique(x$subject_ID))
   participant <- droplevels(participant)
   activ <- length(unique(x$interval_type))
-  if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK" ) == FALSE) ){
+  if( any (unique(x$interval_type) %in% c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK", "SLEEP_B", "SLEEP_C") == FALSE) ){
     warning("enter the argument acolor manually for each interval_type")
   }
 
@@ -156,7 +156,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
     theme_bw() + xlab(paste("Time in", tz)) +  ylab("Participant(s)") +
     theme_classic() +
     {if(missing(acolor)) {scale_color_manual(values = c("ACTIVE" = "#009E73", "EXCLUDED" = "#D55E00", "REST" =  "black",
-                                                     "SLEEP" = "#56B4E9", "WORK" = "#CC79A7")) } } +
+                                                     "SLEEP" = "#56B4E9", "WORK" = "#CC79A7", "SLEEP_B" = "#f03b20", "SLEEP_C" = "#F0E442")) } } +
     scale_fill_manual(name = "Act")
 
 
@@ -222,7 +222,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 #' @param tz the time zone.
 #' @param tz2 an additional time zone.
 #' @param sp the starting point in the x-axis. Set as 00:00:00 by default.
-#' @param with_date allows adding the cutpoint data to the y-axis. with_date = FALSE by default.
+#' @param with_date allows adding the cutpoint date to the y-axis. with_date = FALSE by default.
 #' @param ... Optional parameters.
 #' @return a plot.
 #'
@@ -322,7 +322,7 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
 
   #dat %>% filter(sinceMidnight_end < sinceMidnight_start)
   #if(missing(acolor)) {acolor = c("black", "#56B4E9")} # Defining the color
-  if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7")}  # Defining the colors
+  #if(missing(acolor)) {acolor = c("black", "#56B4E9", "#009E73", "#D55E00", "#F0E442", "#CC79A7")}  # Defining the colors
   activ <- length(unique(dat$interval_type))
   if(missing(si)){ si = rep(1.25, activ)}
   p <- ggplot(data = dat)
@@ -380,9 +380,12 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
 
   #p <- p + scale_y_continuous(limits = c(min(bys), max(bys)), breaks = seq(min(bys), max(bys), 1), expand = c(0, 0), labels = labs2)
 
-  p <- p + scale_y_reverse(breaks = unique(df_seq$sequence) , labels = labs2) #breaks =  seq(1,max(dat$sequence)+1,1)      scale_y_continuous(breaks =  seq(1,max(dat$sequence),1))
+  p <- p + scale_y_reverse(breaks = unique(df_seq$sequence) , labels = labs2) + #breaks =  seq(1,max(dat$sequence)+1,1)      scale_y_continuous(breaks =  seq(1,max(dat$sequence),1))
+  {if(missing(acolor)) {scale_color_manual(values = c("ACTIVE" = "#CC79A7", "EXCLUDED" = "#D55E00", "REST" =  "black",
+                                                      "SLEEP" = "#56B4E9", "WORK" = "#009E73", "SLEEP_B" = "#f03b20", "SLEEP_C" = "#F0E442")) }
+    else{p <- p + scale_color_manual(values = acolor)}  }
 
-  p <- p + scale_color_manual(values = acolor)
+
   p <- p + theme(
     strip.background = element_blank(),
     panel.grid.major.x = element_blank(), # no grids
@@ -426,6 +429,4 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   #work_dat$end_datime   <- as.POSIXct(work_dat$end_datime, format = "%d/%m/%Y %H:%M", tz = "UTC")
   #work_dat$type <- as.factor("work")
 # EOF
-
-
 
