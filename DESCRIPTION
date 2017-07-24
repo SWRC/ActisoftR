@@ -17,7 +17,8 @@ Imports: ggplot2,
     lubridate,
     data.table,
     magrittr,
-    methods
+    methods,
+    RColorBrewer
 Suggests:
     DT,
     Rcpp,
