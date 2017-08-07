@@ -3,14 +3,14 @@ ActisoftR: to do list
 # 07/08/2017 #ESF 
 Implement quality control procedure for acti_data:
 - check that the SLEEP periods are contained within REST periods. Provide warning and solution
-- check for overlapping of periods.
-- if a period end < start, then reverse them.
+- check for overlapping of periods that should be mutually exclusive. e.g. ACTIVE and REST
+- if any period end < start, then reverse them and provide a warning.
+- look for patterns in the plots.
 
 Implement a random generation of SLEEP/REST and possibly WORK periods. Setting number of days, participants, etc. 
 
 Implement other metrics e.g. sleep onset latency.
 
 Include real datasets. Look in the the literature.
-
 
 
