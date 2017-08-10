@@ -24,13 +24,10 @@
 
 #' rep1$with_excluded_bad[2] <- TRUE
 #' baseline_sleep <-  data.frame(subject_ID = c("example01", "example02"), baseline_sleep = c(60 * 5, 60 * 7))  # normal sleep duration by participant
-#' reset <- 2
 #' csd(x = rep1, baseline_sleep = baseline_sleep, reset = 2)
 
 #'# Example 2 with no reset by adding large reset value
 #' csd(x = rep1, baseline_sleep = baseline_sleep, reset = 1e5)
-
-
 
 #' @export
 #' @importFrom grDevices dev.new dev.off x11
@@ -38,65 +35,58 @@
 #' @importFrom magrittr %>%
 #' @import ggplot2
 #'
-csd <- function(x, baseline_sleep, reset = 2, plot = TRUE,...){
-  cumsum_reset <- def <- subject_ID <- period_number <- NULL
+csd <- function(x, baseline_sleep, reset = 2, plot = TRUE, tab = TRUE, ylabel, ...){
+  out2 <-  out <- cumsum_2 <- def <- subject_ID <- period_number <- NULL
 
-  cumsum_res <- function(xx){
-    for (i in 1:length(xx)){ xx[i] <- ifelse( sum(xx[1:i]) < 0, xx[i], abs(sum(xx[1:i-1])))}
-    sum(xx)
-  }
-
-  x <- x[x$with_excluded_bad == FALSE,]
-  x <- x %>% left_join(baseline_sleep, by = "subject_ID")
+  if(length(x$with_excluded_bad == TRUE) > 0) {x <- x[x$with_excluded_bad == FALSE,]}
+  x <- x %>% left_join(baseline_sleep, by = c("subject_ID" = "subject_ID"))
   x$def <- x$total_sleep - x$baseline_sleep
-  x$def2 <- x$def
-  x$def2[x$def2 > 0] <- 0
 
-  x2 <-  x %>%
-    group_by(subject_ID) %>%
-    mutate(cumsum = cumsum(def))
+  cumsum_2 <- function(x, reset = 2){ # x: a vector of the deficiency generally is total sleep - baseline. y is the csd
+    y <- rep(NA, length(x))
+    for (i in 1 : length(x)){
+      y[i] <- ifelse(x[i] < 0 ,
+                     ifelse(i == 1 ,
+                            x[i],
+                            ifelse(y[i - 1] < 0, x[i] + y[i - 1], x[i])),
+                     ifelse(i == 1,
+                            0,
+                            ifelse( i > reset,
+                                    ifelse(all(x[(i - reset + 1) : (i - 1)] >= 0) ,
+                                           0,
+                                           ifelse(x[i] < abs(y[i - 1]), y[i - 1] + x[i], 0)),
+                                    ifelse(y[i - 1] < 0, min(x[i] + y[i - 1], 0, na.rm = TRUE), 0))
+                     )
+      )
 
-  particip <- unique(x2$subject_ID)
-  x2$cumsum_reset <- 0
-
-  colName <- c("subject_ID", "period_number", "total_sleep", "baseline_sleep", "def", "cumsum",	"cumsum_reset", "cumsum_actual")
-  out <- data.frame(matrix(vector(), nrow = 1, length(colName), dimnames = list(c(), colName)), stringsAsFactors = F)
-  out2 <- NULL
-  for (i in 1 : length(particip)){
-    tab <- filter(x2, subject_ID == particip[i])
-    for (j in 1 : nrow(tab)){
-      out$subject_ID <- tab$subject_ID[j]
-      out$period_number <- tab$period_number[j]
-      out$total_sleep <- tab$total_sleep[j]
-      out$baseline_sleep <- tab$baseline_sleep[j]
-      out$def <- tab$def[j]
-      out$cumsum <- cumsum_res(x = tab$def[1:j]) #ifelse(sum(tab$def[1:j]) > 0 , 0 , sum(tab$def[1:j])) #tab$cumsum[j]
-      out$cumsum_reset <- ifelse(j > reset, ifelse( all(tab$def[(j - reset + 1) : j] > 0) , 0, tab$cumsum_reset[j - 1] + tab$def[j]), out$cumsum)
-      #out$cumsum_reset <- ifelse(j > reset, ifelse(sum(tab$def[(j - reset + 1) : j]) == 0, 0, tab$cumsum_reset[j - 1] + tab$def[j]), tab$cumsum[j])
-      out2 <- rbind(out2, out)
     }
-
+    data.frame(def = x, csd = y)
   }
 
-  out2 <- out2 %>% group_by(subject_ID) %>%  mutate(cumsum_actual = cumsum(def))
-  out3 <- NULL
-  #out3 <- data.frame(subject_ID = particip, period_number = rep(0, length(particip)), total_sleep = rep(NA, length(particip))
-  #                   , baseline_sleep = rep(NA, length(particip)), def = rep(0, length(particip)), cumsum = rep(0, length(particip))
-  #                   , cumsum_reset = rep(0, length(particip)), cumsum_actual = rep(0, length(particip)))
-  out3 <- rbind(out2, out3)
+  x <- x %>% dplyr::group_by(subject_ID) %>% dplyr::mutate(cumsum_actual = cumsum(def))
 
- p <- ggplot2::ggplot(data = out3, aes(colour = subject_ID, x = period_number, y = cumsum_reset,
+  particip <- unique(x$subject_ID)
+  for (i in 1 : length(particip)){
+    out <- x[x$subject_ID == particip[i],]
+    out$cumsum <- cumsum_2(out$def, reset = 1E6)$csd
+    out$cumsum_reset <- cumsum_2(out$def, reset = reset)$csd
+    out2 <- rbind(out2, out)
+  }
+
+  if(missing(ylabel)){ylabel <- "Cum sleep debt (in minutes)"}
+  p <- ggplot2::ggplot(data = out2, aes(colour = subject_ID, x = period_number, y = cumsum_reset,
                           group = subject_ID)) +
     geom_line() +
-    xlab("Period number") + ylab("Cum sleep debt (in minutes)") +
-    geom_point()    + scale_x_continuous(breaks =  seq(1,max(out3$period_number),1))
+    xlab("Period number") + ylab(ylabel) +
+    geom_point()    + scale_x_continuous(breaks =  seq(1,max(out2$period_number),1)) +
+    theme(legend.position="bottom")
 
- if(plot == TRUE){
-    #x11()
-   return(list(p, out2))
-  }
-  else return(out2)
-}
+ if(plot == TRUE) return(list(p, out2))
+ else return(out2)
+
+ }
+
+
 
 
 
