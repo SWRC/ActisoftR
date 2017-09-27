@@ -15,8 +15,8 @@
 #' @return a plot.
 #'
 #' @examples
-#' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 #' library("dplyr")
+#' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 #' fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph_brand == "Actiware")
 #' plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day")
 #' # adding a secondary x-axis on top
@@ -50,7 +50,6 @@
 #' @import RColorBrewer
 #' @rdname plot.Darwent
 
-
 plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour",
                          base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE,
                           si, shadow.start = "20:00:00", shadow.end = "06:00:00",
@@ -63,19 +62,19 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   foo <- foo[!is.na(foo$datime_start),] # remove the datime_start = NA's
   foo <- foo[!is.na(foo$datime_end),]
 
-  foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)
-  foo$datime_end = as.POSIXct(foo$datime_end, tz = tz)
+  if(is.POSIXct(foo$datime_start) == FALSE) {foo$datime_start <- as.POSIXct(foo$datime_start, tz = tz)}
+  if(is.POSIXct(foo$datime_end) == FALSE) {foo$datime_end = as.POSIXct(foo$datime_end, tz = tz)}
 
   #foo$interval_type <- toupper(foo$interval_type)
   foo$interval_type <- as.factor(toupper(as.character(foo$interval_type)))
   foo <- arrange(foo, interval_type)
 
 
-  dif_int <- setdiff(unique(foo$interval_type), c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK", "SLEEP_B", "SLEEP_C", "DIARY") )
+  dif_int <- setdiff(unique(foo$interval_type), c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK", "SLEEP_B", "SLEEP_C", "DIARY", "BAD") )
 
   if(missing(acolor)) { # Defining the color
                     match_color <- c("ACTIVE" = "#009E73", "EXCLUDED" = "#D55E00", "REST" =  "black",
-                   "SLEEP" = "#56B4E9", "WORK" = "#CC79A7", "SLEEP_B" = "#f03b20", "SLEEP_C" = "#F0E442", "DIARY" = "#999999")
+                   "SLEEP" = "#56B4E9", "WORK" = "#CC79A7", "SLEEP_B" = "#f03b20", "SLEEP_C" = "#F0E442", "DIARY" = "#999999", "BAD" = "#D55E00")
 
     if(length(dif_int) > 0){
       cols_ext <- brewer.pal(length(dif_int) + 2, "Paired")#[1 : length(dif_int)]
@@ -93,7 +92,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 
   if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0, part))}
 
-  if(shade == TRUE){HNS <- home.night.shade(x = foo, homeTZ = homeTZ, tz = tz)}
+  if(shade == TRUE){HNS <- home.night.shade(x = foo, homeTZ = homeTZ)} #, tz = tz
   if(local.shade == TRUE){LNS <- local.night.shade(localTZ = localTZ)}
 
   match_start <- function(x){ # will match all the participants at the same start date when base = TRUE.
@@ -115,7 +114,8 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
     foo <- match_start(foo)
     if(shade == TRUE){HNS <- match_start(HNS)}
     if(local.shade == TRUE){LNS <- match_start(LNS)}
-     }
+ 
+  }
 
   # to export as csv
   if (export == TRUE){
@@ -131,20 +131,20 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   p <- ggplot2::ggplot() + {
     # home night shade
     if(shade == TRUE) {geom_segment(data = HNS, #home.night.shade(x = foo, homeTZ = homeTZ, tz = tz)
-                                    aes(x = as.numeric(as.POSIXct(datime_start, tz = tz)),
-                                        xend = as.numeric(as.POSIXct(datime_end, tz = tz)),
+                                    aes(x = as.numeric(as.POSIXct(datime_start)),
+                                        xend = as.numeric(as.POSIXct(datime_end)),
                                         y = subject_ID, yend = subject_ID), size = 13, col = "green",
                                     alpha = 0.22)} } + {
     # local night shade
     if(local.shade == TRUE) {geom_segment(data = LNS, #local.night.shade(localTZ = localTZ)
-             aes(colour = interval_type, x = as.numeric(as.POSIXct(datime_start, tz = tz)),
-             xend = as.numeric(as.POSIXct(datime_end, tz = tz)),
+             aes(colour = interval_type, x = as.numeric(as.POSIXct(datime_start)),
+             xend = as.numeric(as.POSIXct(datime_end)),
              y = subject_ID, yend = subject_ID), size = 12, col = "black", alpha = 0.22)}
     else localTZ <- NULL} +
     geom_segment(data = foo, aes(colour = interval_type, x = as.numeric(datime_start), xend = as.numeric(datime_end),
                                  y = subject_ID, yend = subject_ID, size = interval_type)) +
     scale_size_manual(values = si)  +
-    theme_bw() + xlab(paste("Time in", tz)) +  ylab("Participant(s)") +
+    theme_bw() + xlab(paste("Time in", tz(foo$datime_start[1]))) +  ylab("Participant(s)") +
     theme_classic() +
     scale_color_manual(values = acolor) +
     #{if(missing(acolor)) {scale_color_manual(values = match_color)} } +
@@ -153,11 +153,11 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
   if(show_plot == TRUE){
 
   x_axis_lab <- seq.POSIXt(floor_date(min(foo$datime_start), unit = "day"),
-             ceiling_date(max(foo$datime_start), unit = "day"), by = datebreaks)
+             ceiling_date(max(foo$datime_start), unit = "day"), by = datebreaks, tz = tz)
 
   x_axis_lab_num <- as.integer(as.numeric(x_axis_lab))
 
-  p <- p + { if(!missing(tz2) == TRUE) scale_x_continuous(paste("Time in", tz),
+  p <- p + { if(!missing(tz2) == TRUE) scale_x_continuous(paste("Time in", tz = tz),
                                                         breaks = x_axis_lab_num,
               labels = format(x_axis_lab, format = "%H:%M", tz = tz),
               sec.axis = sec_axis(~ . + 0, breaks = x_axis_lab_num,
@@ -168,9 +168,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
                                 breaks = x_axis_lab_num,
                                 labels = format(x_axis_lab, format = "%H:%M", tz = tz) ) }
 
-  # data$num <- as.numeric(data$datetime)
-  # scale_x_continuous("UTC", breaks = data$num, labels = data$datetime, sec.axis = sec_axis(~ . + 0, breaks = data$num, labels = with_tz(data$datetime, tz ="EST"), name = "EST"))
-  #
+
   p <- p +  theme(axis.text.x = element_text(size = 8, angle = 90 , vjust = 0.5)) +
     theme(plot.margin = unit(c(1, 0.5, 0.5, 0.5), "cm") ) +
     theme(plot.title = element_text(color = "black", size = 18, hjust = 0.5)) +
@@ -205,16 +203,20 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 #' @param ... Optional parameters.
 #' @return a plot.
 #'
+#'
+#'@details The date-time data in the data frame dat will keep time zone.
+#' The argument tz and tz2 are used to specify the time in the x-axis.
+#'
 #' @examples
 #' # Example 1
 #' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 #' library("dplyr")
 #' fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph_brand == "Actiware", subject_ID=="participant01")
-#' fil <- dplyr::tbl_df(fil)
 #' fil <- dplyr::select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
-#' #dat <- read.csv("C:\\1\\EXAMPLE_DATA\\AMI\\example01_AMI.csv")
 #' plot_long(dat = fil)
-#' # adding a second time zone times in the x-axis.
+#' # Using a different time zone in the x-axis
+#' plot_long(dat = fil, tz = "America/Havana")
+#' # Adding a second time zone times in the x-axis.
 #' plot_long (dat = fil, tz2 = "EST")
 #' # starting on x-axis at 06:00:00.
 #' plot_long (dat = fil, sp = "06:00:00", acolor = c("green", "blue"), si = c(4,3))
@@ -252,13 +254,13 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   #dat <- dat[!is.na(dat$interval_number), ] # get rid of the 2x summary lines
 
   # make a datetime variable
-  dat$datime_start <- as.POSIXct(dat$datime_start, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-  dat$datime_end <- as.POSIXct(dat$datime_end, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+  if(is.POSIXct(dat$datime_start) == FALSE) {dat$datime_start <- as.POSIXct(dat$datime_start, tz = tz)}
+  if(is.POSIXct(dat$datime_end) == FALSE) {dat$datime_end = as.POSIXct(dat$datime_end, tz = tz)}
 
   # make time into mins since midnight - make the sleeps that cross midnight plot across 2 lines
 
-  dat$trun_start <- as.POSIXct(paste(trunc(dat$datime_start, "day"), sp),format = "%Y-%m-%d %H:%M:%S", tz = tz)
-  dat$trun_end <- as.POSIXct(paste(trunc(dat$datime_end, "day"), sp),format = "%Y-%m-%d %H:%M:%S", tz = tz)
+  dat$trun_start <- as.POSIXct(paste(trunc(dat$datime_start, "day"), sp),format = "%Y-%m-%d %H:%M:%S", tz = tz(dat$datime_start))
+  dat$trun_end <- as.POSIXct(paste(trunc(dat$datime_end, "day"), sp),format = "%Y-%m-%d %H:%M:%S", tz = tz(dat$datime_start))
 
   # extract the date and make into factor counter: This is not working for cases where the REST/SLEEP occurs after midnight
 
@@ -299,14 +301,15 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
 
   dat <- arrange(dat, interval_type)
 
+
   activ <- length(unique(dat$interval_type))
   if(missing(si)){ si = rep(1.25, activ)}
 
-  dif_int <- setdiff(unique(dat$interval_type), c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK", "SLEEP_B", "SLEEP_C", "DIARY") )
+  dif_int <- setdiff(unique(dat$interval_type), c("ACTIVE" ,"EXCLUDED" ,"REST", "SLEEP" , "WORK", "SLEEP_B", "SLEEP_C", "DIARY", "BAD") )
 
   if(missing(acolor)) { # Defining the color
     match_color <- c("ACTIVE" = "#009E73", "EXCLUDED" = "#D55E00", "REST" =  "black",
-                     "SLEEP" = "#56B4E9", "WORK" = "#CC79A7", "SLEEP_B" = "#f03b20", "SLEEP_C" = "#F0E442", "DIARY" = "#999999")
+                     "SLEEP" = "#56B4E9", "WORK" = "#CC79A7", "SLEEP_B" = "#f03b20", "SLEEP_C" = "#F0E442", "DIARY" = "#999999", "BAD" = "#D55E00")
 
     if(length(dif_int) > 0){
       cols_ext <- brewer.pal(length(dif_int) + 2, "Paired")#[1 : length(dif_int)]
@@ -319,13 +322,17 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
 
   p <- ggplot(data = dat)
 
-  if(nrow(dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start)) > 0){
-    p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start))}
-  # plot the x-midnight segments in 2 goes: one for the bit between sleep start and midnight
   if(nrow(dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start)) > 0){
     p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = 1440, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start))
-    # second bit for midnight until sleep offset
+
     p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start))}
+
+  if(nrow(dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start)) > 0){
+    p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start))}
+
+    # second bit for midnight until sleep offset
+
+
 
   p <- p + scale_size_manual(values = si)
   # flip it upside down so newest dates are on the top of the figure
@@ -336,9 +343,6 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   b <-  seq.POSIXt(dat$trun_start[1], dat$trun_start[1] + hours(24),  length.out = 5) #c("00:00", "06:00", "12:00", "18:00", "24:00")
   #b <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz)
   b <- format(b, format="%H:%M", usetz = TRUE, tz = tz)
-
-  #text0 = textGrob("(UTC)", gp = gpar(cex = .75))
-  #p <- p + annotation_custom(grob = text0,  xmin = 1550, xmax = 1650, ymin = -as.numeric(max(dat$sequence) + 2.5), ymax = -as.numeric(max(dat$sequence) + 2.5)  )  #-26.5
 
   if(missing(tz2)){labs = b}
   else{ b2 <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz) #"EST"
@@ -362,6 +366,7 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   p <- p + scale_color_manual(values = acolor)
 
 
+
   p <- p + theme(
     strip.background = element_blank(),
     panel.grid.major.x = element_blank(), # no grids
@@ -374,5 +379,4 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   p
 
 }
-
 
