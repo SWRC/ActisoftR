@@ -238,7 +238,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 #' @import ggplot2
 #' @rdname plot_long
 
-plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_date = FALSE, ...) {
+plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_date = FALSE, hourbreaks = 5,...) {
   sinceMidnight_end <- sinceMidnight_start <- interval_type <- dat3 <- dat4 <- dat5 <- dat6 <- NULL
   ###############################################
   # Filename: plot_long.R
@@ -340,7 +340,7 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   p <- p + ggtitle(gsub("_.*$", "", dat$subject_ID))
   p <- p + labs(x = "Time", y = "Days") #Sleep
 
-  b <-  seq.POSIXt(dat$trun_start[1], dat$trun_start[1] + hours(24),  length.out = 5) #c("00:00", "06:00", "12:00", "18:00", "24:00")
+  b <-  seq.POSIXt(dat$trun_start[1], dat$trun_start[1] + hours(24),  length.out = hourbreaks) #c("00:00", "06:00", "12:00", "18:00", "24:00")
   #b <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz)
   b <- format(b, format="%H:%M", usetz = TRUE, tz = tz)
 
