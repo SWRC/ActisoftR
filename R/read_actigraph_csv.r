@@ -156,8 +156,8 @@ alldata$efficiency[alldata$interval_type == "ACTIVE"] <- NA
   alldata2$interval_type <- factor(alldata2$interval_type, levels = c(levels(alldata2$interval_type), "BAD"))
   alldata2[alldata2$interval_type == "SLEEP" & alldata2$bad > 0,]$interval_type <- factor("BAD")
 
-  alldata2[alldata2$interval_type == "SLEEP" & alldata2$duration == 0,]$datime_start <- NA
-  alldata2[alldata2$interval_type == "SLEEP" & alldata2$duration == 0,]$datime_end <- NA
+  alldata2[alldata2$interval_type == "SLEEP" & alldata2$duration == 0]$datime_start <- NA
+  alldata2[alldata2$interval_type == "SLEEP" & alldata2$duration == 0]$datime_end <- NA
                                        
   alldata2 <- droplevels(alldata2)
 
