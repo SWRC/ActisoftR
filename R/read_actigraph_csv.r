@@ -100,6 +100,13 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
   ##* What would be the best option to match "efficiency" and "pslp" in both datasets?
   ## I extracted the one we want to keep here but keep in mind when merging that efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
 
+ ## AMI codes O-O periods with no sleep achieved as starting 1 min after ending. Set date/times in those obs to missing here.
+ ## Edgar: how to make this cleaner?
+   dat2$start_date <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, NA, dat2$start_date)
+   dat2$start_time <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, NA, dat2$start_time)
+   dat2$end_date   <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, NA, dat2$end_date)
+   dat2$end_time   <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, NA, dat2$end_time)                           
+                                       
   }
 
   else dat2 <- NULL
@@ -156,9 +163,6 @@ alldata$efficiency[alldata$interval_type == "ACTIVE"] <- NA
   alldata2$interval_type <- factor(alldata2$interval_type, levels = c(levels(alldata2$interval_type), "BAD"))
   alldata2[alldata2$interval_type == "SLEEP" & alldata2$bad > 0,]$interval_type <- factor("BAD")
 
-  alldata2[alldata2$interval_type == "SLEEP" & alldata2$duration == 0]$datime_start <- NA
-  alldata2[alldata2$interval_type == "SLEEP" & alldata2$duration == 0]$datime_end <- NA
-                                       
   alldata2 <- droplevels(alldata2)
 
   alldata2
