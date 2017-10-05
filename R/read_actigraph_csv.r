@@ -102,10 +102,10 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
 
  ## AMI codes O-O periods with no sleep achieved as starting 1 min after ending. Set date/times in those obs to missing here.
  ## Edgar: how to make this cleaner?
-   dat2$start_date <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, NA, dat2$start_date)
-   dat2$start_time <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, NA, dat2$start_time)
-   dat2$end_date   <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, NA, dat2$end_date)
-   dat2$end_time   <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, NA, dat2$end_time)                           
+   dat2$start_date <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, "", dat2$start_date)
+   dat2$start_time <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, "", dat2$start_time)
+   dat2$end_date   <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, "", dat2$end_date)
+   dat2$end_time   <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, "", dat2$end_time)                           
                                        
   }
 
