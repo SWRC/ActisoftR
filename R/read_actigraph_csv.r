@@ -99,14 +99,7 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
   ## note that AMI sleep efficiency is "pslp" where IntType == "Down" ONLY and NOT "pslp" where IntType == "O - O"
   ##* What would be the best option to match "efficiency" and "pslp" in both datasets?
   ## I extracted the one we want to keep here but keep in mind when merging that efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
-
- ## AMI codes O-O periods with no sleep achieved as starting 1 min after ending. Set date/times in those obs to missing here.
- ## Edgar: how to make this cleaner?
-   dat2$start_date <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, "", dat2$start_date)
-   dat2$start_time <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, "", dat2$start_time)
-   dat2$end_date   <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, "", dat2$end_date)
-   dat2$end_time   <- ifelse(dat2$interval_type == "O - O" & dat2$duration == 0, "", dat2$end_time)                           
-                                       
+                                  
   }
 
   else dat2 <- NULL
