@@ -238,7 +238,8 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 #' @import ggplot2
 #' @rdname plot_long
 
-plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_date = FALSE, hourbreaks = 5,...) {
+
+plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_date = FALSE, alphas = 1, hourbreaks = 5, ...) {
   sinceMidnight_end <- sinceMidnight_start <- interval_type <- dat3 <- dat4 <- dat5 <- dat6 <- NULL
   ###############################################
   # Filename: plot_long.R
@@ -301,7 +302,6 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
 
   dat <- arrange(dat, interval_type)
 
-
   activ <- length(unique(dat$interval_type))
   if(missing(si)){ si = rep(1.25, activ)}
 
@@ -322,16 +322,15 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
 
   p <- ggplot(data = dat)
 
-  if(nrow(dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start)) > 0){
-    p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = 1440, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start))
 
-    p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start))}
+  # plot the x-midnight segments in 2 goes: one for the bit between sleep start and midnight
+  if(nrow(dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start)) > 0){
+    p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = 1440, y = sequence, yend = sequence, size = interval_type), alpha = alphas, data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start))
+
+    p <- p + geom_segment(aes(colour = interval_type, x = 0, xend = sinceMidnight_end, y = sequence + 1, yend = sequence + 1, size = interval_type), alpha = alphas, data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end < sinceMidnight_start))}
 
   if(nrow(dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start)) > 0){
-    p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence, size = interval_type), data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start))}
-
-    # second bit for midnight until sleep offset
-
+    p <- p + geom_segment(aes(colour = interval_type, x = sinceMidnight_start, xend = sinceMidnight_end, y = sequence, yend = sequence, size = interval_type, alpha = alphas), alpha = alphas , data = dat %>% filter(sinceMidnight_start >= 0 & sinceMidnight_end > 0 & sinceMidnight_end > sinceMidnight_start))}
 
 
   p <- p + scale_size_manual(values = si)
@@ -341,7 +340,6 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   p <- p + labs(x = "Time", y = "Days") #Sleep
 
   b <-  seq.POSIXt(dat$trun_start[1], dat$trun_start[1] + hours(24),  length.out = hourbreaks) #c("00:00", "06:00", "12:00", "18:00", "24:00")
-  #b <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz)
   b <- format(b, format="%H:%M", usetz = TRUE, tz = tz)
 
   if(missing(tz2)){labs = b}
@@ -356,16 +354,13 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
                               expand = c(0, 0),labels = labs)
 
   # adding date info in y axis
-  bys <- unique(df_seq$sequence) #unique(dat$sequence)
+  bys <- unique(df_seq$sequence)
   if(with_date==FALSE ){labs2  = bys}
   else{labs2 <- paste(bys, unique(df_seq$seqDates), sep = " ") }  #dat$trun_start
 
-  #p <- p + scale_y_continuous(limits = c(min(bys), max(bys)), breaks = seq(min(bys), max(bys), 1), expand = c(0, 0), labels = labs2)
 
   p <- p + scale_y_reverse(breaks = unique(df_seq$sequence) , labels = labs2)  #breaks =  seq(1,max(dat$sequence)+1,1)      scale_y_continuous(breaks =  seq(1,max(dat$sequence),1))
   p <- p + scale_color_manual(values = acolor)
-
-
 
   p <- p + theme(
     strip.background = element_blank(),
@@ -379,4 +374,7 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   p
 
 }
+
+
+
 
