@@ -153,8 +153,10 @@ alldata$efficiency[alldata$interval_type == "ACTIVE"] <- NA
 
   # In AMI, setting the interval_type == SLEEP periods to BAD when the BAD column != 0.
 
-  alldata2$interval_type <- factor(alldata2$interval_type, levels = c(levels(alldata2$interval_type), "BAD"))
-  alldata2[alldata2$interval_type == "SLEEP" & alldata2$bad > 0,]$interval_type <- factor("BAD")
+  if( nrow(alldata2[alldata2$interval_type == "SLEEP" & alldata2$bad > 0 & !is.na(alldata2$bad),]) > 0){
+    alldata2$interval_type <- factor(alldata2$interval_type, levels = c(levels(alldata2$interval_type), "BAD"))
+    alldata2[alldata2$interval_type == "SLEEP" & alldata2$bad > 0 & !is.na(alldata2$bad),]$interval_type <- "BAD"
+  }
 
   alldata2 <- droplevels(alldata2)
 
