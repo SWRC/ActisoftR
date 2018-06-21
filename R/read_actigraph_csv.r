@@ -6,6 +6,7 @@
 #' If the CSV files have different number of columns the function will fill missing columns with NAs.
 #'
 #' @param x the file path
+#' @param tz the time zone
 #' @param ... Optional parameters
 #' @return a dataframe
 #' @export
@@ -20,7 +21,7 @@
 #'
 
 
-read_actigraph_csv <- function(x = "EXAMPLE_DATA", ...){
+read_actigraph_csv <- function(x = "EXAMPLE_DATA", tz = "UTC", ...){
 interval_type <- NULL
 if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
       dir.exists(paths = paste(x,"//Actiware", sep = "")) == FALSE){ # for different files in a single folder
@@ -98,7 +99,7 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
   ## note that AMI sleep efficiency is "pslp" where IntType == "Down" ONLY and NOT "pslp" where IntType == "O - O"
   ##* What would be the best option to match "efficiency" and "pslp" in both datasets?
   ## I extracted the one we want to keep here but keep in mind when merging that efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
-
+                                  
   }
 
   else dat2 <- NULL
@@ -109,12 +110,21 @@ if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
   alldata <- alldata %>% dplyr::mutate(interval_type = factor(interval_type, levels = c("REST", "SLEEP", "ACTIVE","EXCLUDED", "Down","O - O","Up", "24-Hr" )))
   #data.table::setattr(alldata$interval_type,"levels",c("REST", "SLEEP", "ACTIVE","EXCLUDED", "Down","O - O","Up", "24-Hr" ))
 
+# if(missing(form)){ form = "%d/%m/%Y"}
+#  alldata$start_date <- as.POSIXct( strptime( alldata$start_date, format = form), tz = tz)
+#  alldata$end_date <- as.POSIXct( strptime( alldata$end_date, format = form), tz = tz)
+#  alldata$datime_start <- alldata$start_date + hms(alldata$start_time) #as.POSIXct(paste( alldata$start_date, alldata$start_time), tz = tz)
+#  alldata$datime_end   <- alldata$end_date + hms(alldata$end_time) #as.POSIXct(paste( alldata$end_date, alldata$end_time), tz = tz)
 
   alldata$datime_start <- paste( as.POSIXct( strptime( alldata$start_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$start_time)
   alldata$datime_end   <- paste( as.POSIXct( strptime( alldata$end_date, format = "%d/%m/%Y"), tz = "UTC"), alldata$end_time)
 
-  alldata$datime_start[which(alldata$datime_start == "NA NA")] <- NA
-  alldata$datime_end[which(alldata$datime_end == "NA NA")] <- NA
+  alldata$datime_start[which(as.character(alldata$datime_start) == "NA NA")] <- NA
+  alldata$datime_end[which(as.character(alldata$datime_end) == "NA NA")] <- NA
+
+
+  #alldata$datime_start[which(alldata$datime_start == "NA NA")] <- NA
+  #alldata$datime_end[which(alldata$datime_end == "NA NA")] <- NA
 
   # standardizing the interval_type
   alldata$interval_type[alldata$interval_type == "Down"] <- as.factor("REST")
@@ -127,8 +137,9 @@ alldata$sleep_time[alldata$interval_type == "ACTIVE"] <- NA
 alldata$efficiency[which(alldata$efficiency == ".") ] <- NA
 alldata$efficiency <- as.numeric(as.character(alldata$efficiency))
 
-  alldata$sleep_time <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$sleep_time)
-  alldata$efficiency <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$efficiency)
+alldata$efficiency[alldata$interval_type == "ACTIVE"] <- NA
+  #alldata$sleep_time <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$sleep_time)
+  #alldata$efficiency <- ifelse(alldata$interval_type == "ACTIVE", NA, alldata$efficiency)
 
   #alldata2 <- alldata %>%
   #  dplyr::group_by(interval_number, start_date, start_time, duration) %>%
@@ -138,11 +149,16 @@ alldata$efficiency <- as.numeric(as.character(alldata$efficiency))
 
   #alldata2 <- alldata2[!is.na(alldata2$datime_start),]
   #alldata2 <- alldata2[!is.na(alldata2$datime_end),]
-
   #alldata2[alldata2$duration != ".", ]
+
+  # In AMI, setting the interval_type == SLEEP periods to BAD when the BAD column != 0.
+
+  if( nrow(alldata2[alldata2$interval_type == "SLEEP" & alldata2$bad > 0 & !is.na(alldata2$bad),]) > 0){
+    alldata2$interval_type <- factor(alldata2$interval_type, levels = c(levels(alldata2$interval_type), "BAD"))
+    alldata2[alldata2$interval_type == "SLEEP" & alldata2$bad > 0 & !is.na(alldata2$bad),]$interval_type <- "BAD"
+  }
 
   alldata2 <- droplevels(alldata2)
 
   alldata2
   }
-
