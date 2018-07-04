@@ -1,10 +1,11 @@
 #' Cumulative sleep debt.
 #'
-#' @param x a report period
+#' @param x a report period. See report_period().
 #' @param baseline_sleep a data frame containing the normal sleep duration or baseline by participant.
 #' @param reset consecutive number of sleep periods that will set as zero the cumulative sleep debt when the total sleep in 24h is greater than the baseline_sleep.
 #' It does not depend on the exceeding duration or credit.
 #' @param plot a logical variable. By default is TRUE.
+#' @param ylabel label of the y-axis
 #' @param ... optional parameters
 #'
 #' @return a data frame and optionally a graph. def is the daily sleep deficiency.
@@ -14,20 +15,37 @@
 #'
 #' @examples
 #'# Example 1
-#' library(lubridate)
-#' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
-#' p <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example period.csv"),
-#'  sep = ",", header = TRUE, skip = 0)
-#' p$summary_start_datime <- dmy_hm(p$summary_start_datime,  tz = "UTC")
-#' p$summary_end_datime <- dmy_hm(p$summary_end_datime,  tz = "UTC")
-#' rep1 <- report_period(period = p , acti_data = acti_data)
+#'library(lubridate)
+#' data(act)
+#' act$datime_start <- ymd_hms(act$datime_start)
+#' act$datime_end <- ymd_hms(act$datime_end)
+#'
+#' par <- data.frame(subject_ID = 1,
+#' summary_duration_h = 24,
+#' summary_type = "sequential",
+#' summary_start_datime = ymd_hms("2017-12-05 00:00:00 UTC"),
+#' summary_end_datime = ymd_hms("2017-12-15 00:00:00 UTC"))
+#'
+#' rep <- report_period(period = par , acti_data = act)
+#'
+#' start_date <- act[act$subject_ID==1 & act$interval_type == "FLIGHT" & act$comments == "SIN-AMS",]$datime_end
+#' sel <- act[act$datime_start >= start_date & act$datime_end <= start_date + days(10),]
+#'
+#' par_afterflight <- data.frame(subject_ID = 1,
+#' summary_duration_h = 24,
+#' summary_type = "sequential",
+#' summary_start_datime = round.POSIXt(start_date, "day"),
+#' summary_end_datime = round.POSIXt(start_date, "day") + days(10))
 
-#' rep1$with_excluded_bad[2] <- TRUE
-#' baseline_sleep <-  data.frame(subject_ID = c("example01", "example02"), baseline_sleep = c(60 * 5, 60 * 7))  # normal sleep duration by participant
-#' csd(x = rep1, baseline_sleep = baseline_sleep, reset = 2)
+#' rep_afterflight <- report_period(period = par_afterflight , acti_data = sel)
+#' baseline <- data.frame(subject_ID = 1, baseline_sleep = mean(rep$total_sleep))
+#' reset <- 2
+#' z <- csd(x = rep_afterflight, baseline_sleep = baseline, reset = 2)
+#' z[[2]]
+#' plot(z[[1]])
 
 #'# Example 2 with no reset by adding large reset value
-#' csd(x = rep1, baseline_sleep = baseline_sleep, reset = 1e5)
+#' csd(x = rep_afterflight, baseline_sleep = baseline, reset = 1E5)
 
 #' @export
 #' @importFrom grDevices dev.new dev.off x11
@@ -35,14 +53,14 @@
 #' @importFrom magrittr %>%
 #' @import ggplot2
 #'
-csd <- function(x, baseline_sleep, reset = 2, plot = TRUE, tab = TRUE, ylabel, ...){
+csd <- function(x, baseline_sleep, reset = 2, plot = TRUE, ylabel, ...){
   out2 <-  out <- cumsum_2 <- def <- subject_ID <- period_number <- NULL
 
   if(length(x$with_excluded_bad == TRUE) > 0) {x <- x[x$with_excluded_bad == FALSE,]}
   x <- x %>% left_join(baseline_sleep, by = c("subject_ID" = "subject_ID"))
   x$def <- x$total_sleep - x$baseline_sleep
 
-  cumsum_2 <- function(x, reset = 2){ # x: a vector of the deficiency generally is total sleep - baseline. y is the csd
+  cumsum_2 <- function(x, reset = 2){
     y <- rep(NA, length(x))
     for (i in 1 : length(x)){
       y[i] <- ifelse(x[i] < 0 ,
@@ -79,6 +97,7 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE, tab = TRUE, ylabel, .
     geom_line() +
     xlab("Period number") + ylab(ylabel) +
     geom_point()    + scale_x_continuous(breaks =  seq(1,max(out2$period_number),1)) +
+    theme_bw() +
     theme(legend.position="bottom")
 
  if(plot == TRUE) return(list(p, out2))
