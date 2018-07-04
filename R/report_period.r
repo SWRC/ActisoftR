@@ -1,9 +1,9 @@
 #' Generates reports based on input periods.
 #'
 #'
-#' @param period a dataframe containing participants, start and end date/time period
+#' @param period a dataframe containing participants and the start and end date/time periods.
 #' @param acti_data a dataframe of the form 'acti_data'.
-#' @param remove_bad a logical value used to indicate if the 'bad' or 'EXCLUDED' are removed. Set as TRUE.
+#' @param remove_bad a logical value used to indicate if 'bad' intervals or 'EXCLUDED' are removed. Set as TRUE.
 #' @param tz is the time zone. Optional argument. tz = "UTC" by default.
 #' @param ... Optional parameters
 #'
@@ -11,67 +11,25 @@
 #'
 #'@details Periods partially scored as 'bad' or 'EXCLUDED' are due to off-wrist or other reasons.
 #' In that case all summary estimates except ‘time in bed’ will be set to NA,
-#' and the column ‘with_excluded_bad’ will show TRUE. See examples in the Vignettes.
+#' and the column ‘with_excluded_bad’ will show a TRUE. See examples in the Vignettes.
 #' This can be avoided using remove_bad = FALSE.
 #' Sleep efficiency will be zero when there is an attempt to sleep (no sleep achieved in the period) within a rest.
 #' However, the sleep efficiency will be NA when there is not REST or SLEEP with in an interval of time.
 #'
 #' @examples
 #'# Example 1
-#' library(lubridate)
-#' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
-#' p <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example period.csv"),
-#'  sep = ",", header = TRUE, skip = 0)
-#' p$summary_start_datime <- dmy_hm(p$summary_start_datime,  tz = "UTC")
-#' p$summary_end_datime <- dmy_hm(p$summary_end_datime,  tz = "UTC")
-#' rep1 <- report_period(period = p , acti_data = acti_data)
-#' View(rep1)
-
-
-#'# Example 2
-#' acti_data2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_2")
-#' p2 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA\\input parameters example period2.csv"),
-#'  sep = ",", header = TRUE, skip = 0)
-#' p2$summary_start_datime <- lubridate::dmy_hms(p2$summary_start_datime,  tz = "UTC")
-#' p2$summary_end_datime <- lubridate::dmy_hms(p2$summary_end_datime,  tz = "UTC")
-#' rep2 <- report_period(period = p2 , acti_data = acti_data2, remove_bad = TRUE)
-#' View(rep2)
-
-
-#'# Example 3
-#' acti_data2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_2")
-#' p3 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_2\\input parameters example period for MVB_09-05-2016_163631_AWedited2.csv"),
-#'  sep = ",", header = TRUE, skip = 0)
-#' p3$summary_start_datime <- lubridate::dmy_hm(p3$summary_start_datime,  tz = "UTC")
-#' p3$summary_end_datime <- lubridate::dmy_hm(p3$summary_end_datime,  tz = "UTC")
-#' rep3 <- report_period(period = p3 , acti_data = acti_data2)
-#' View(rep3)
-
-
-#'# Example 4 mixed summary_type
-#'# for 'first' summary type only summary_start_datime and the duration will be used.
-#' acti_data2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_2")
-#' p4 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_2\\input parameters example period mixed.csv"), sep = ",", header = TRUE, skip = 0, na.strings=c("NA","NaN", " "))
-#' p4$summary_start_datime <- lubridate::dmy_hm(p4$summary_start_datime,  tz = "UTC")
-#' p4$summary_end_datime <- lubridate::dmy_hm(p4$summary_end_datime,  tz = "UTC")
-#' rep4 <- report_period(period = p4 , acti_data = acti_data2)
-#' View(rep4)
-
-
-#'# Example 5 with Excluded periods
-#' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_3")
-#' p5 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_3\\input parameters example period with Excluded.csv"),
-#'  sep = ",", header = TRUE, skip = 0)
-#' p5$summary_start_datime <- dmy_hm(p5$summary_start_datime,  tz = "UTC")
-#' p5$summary_end_datime <- dmy_hm(p5$summary_end_datime,  tz = "UTC")
-#' rep5 <- report_period(period = p5 , acti_data = acti_data)
-#' View(rep5)
-
+#' library("lubridate")
+#' par <- data.frame(subject_ID = 1,
+#' summary_duration_h = 24,
+#' summary_type = "sequential",
+#' summary_start_datime = ymd_hms("2017-12-05 00:00:00 UTC"),
+#' summary_end_datime = ymd_hms("2017-12-15 00:00:00 UTC"))
+#' data(act)
+#' report_period(period = par , acti_data = act)
 
 #' @export
 #' @importFrom dplyr filter mutate summarise n
 #' @importFrom lubridate dmy_hm dmy_hms ymd_hms days with_tz
-
 
 report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", shade,...){
   with_tz <- summary_type <- subject_ID <- duration_adj <- sleep_time_adj <- NULL
@@ -97,7 +55,6 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", shad
   acti_data$duration <- as.numeric(as.character(acti_data$duration))
   acti_data$sleep_time <- as.numeric(as.character(acti_data$sleep_time))
 
-
   acti_data <- tbl_df(filter(acti_data, subject_ID %in% particip, interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM")))
 
   colName <- c("Actisoft_ID",	"period_number",
@@ -118,7 +75,7 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", shad
 
     for (jj in 1 : nrow(tab3)){
 
-      row <- tab3[jj,] #participant
+      row <- tab3[jj,]
       if(row$summary_start_datime > row$summary_end_datime) { art <- row$summary_start_datime; row$summary_start_datime <-
         row$summary_end_datime; row$summary_end_datime <- art }
       report <- data.frame(matrix(vector(), nrow=1, length(colName), dimnames = list(c(), colName)), stringsAsFactors = F)
@@ -129,11 +86,9 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", shad
       }
       ex <- mat[mat$interval_type == "EXCLUDED",]
 
-      # to do: adapt for cases with more than two EXLUDED periods
       rem = FALSE
       if(nrow(ex) > 0){rem = TRUE}
 
-      # I need to check this
       mat$exact1 <- ifelse(mat$datime_start < row$summary_start_datime, 1 - (((as.numeric(difftime(row$summary_start_datime, mat$datime_start, units = "mins")))) / as.numeric(as.character(mat$duration))), 1)#row$summary_start_datime - mat$datime_start
       mat$exact2 <- ifelse(mat$datime_end > row$summary_end_datime, (((as.numeric(difftime(row$summary_end_datime, mat$datime_start, units = "mins")))) / as.numeric(as.character(mat$duration))), 1) #row$summary_end_datime - mat$datime_start
       mat$exact3 <-  mat$exact1 + mat$exact2 - 1
@@ -144,7 +99,7 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", shad
       matex <- dplyr::filter(mat, interval_type %in% c("REST", "EXCLUDED"))
       mat0 <- dplyr::filter(mat, interval_type %in% c("REST", "SLEEP"))
 
-      # efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
+      # Note: efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
   if(all(mat0$actigraph_brand == "Actiware")){
       if(nrow(mat0) > 0){
         byint2 <- NULL
@@ -159,31 +114,28 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", shad
       }
   }
 
-
-
       mat2 = NULL
       mat2 <-  mat0 %>%
         group_by(interval_type) %>%
-        summarise(interval_number = n(), #ifelse(duration > 0, n(), 0),
+        summarise(interval_number = n(),
                   number_exact = sum(as.numeric(as.character(exact3)), na.rm = T),
                   Duration = sum(duration_adj, na.rm = T),
                   Sleep_time = sum(sleep_time_adj, na.rm = T),
-                  sleep_efficiency = sum(prop.table(duration_adj[!is.na(duration_adj)]) * efficiency[!is.na(efficiency)]), # not sure here. Verify
+                  sleep_efficiency = sum(prop.table(duration_adj[!is.na(duration_adj)]) * efficiency[!is.na(efficiency)]),
                   longest_period = max(sleep_time_adj, na.rm = T),
                   shortest_period = min(sleep_time_adj, na.rm = T)
         )
 
       report$Actisoft_ID <- y
       report$period_number <- jj
-      report$report_duration_m <- abs(as.numeric(row$summary_duration_h) * 60) # /60 tab3$summary_duration_h[jj] * 60
+      report$report_duration_m <- abs(as.numeric(row$summary_duration_h) * 60)
       report$number_of_rests_exact <- as.numeric(as.character(mat2$number_exact[1]))
       report$number_of_sleeps_exact <- as.numeric(as.character(mat2$number_exact[2]))
-      report$number_of_rests <-  nrow(matex) # mat2$interval_number[1]
+      report$number_of_rests <-  nrow(matex)
       report$number_of_sleeps <- mat2$interval_number[2]
-      report$total_time_in_bed <- as.numeric(sum(matex$duration_adj, na.rm = T)) #sum(matex$duration) #mat2$Duration[1] + sum(ex$duration)
+      report$total_time_in_bed <- as.numeric(sum(matex$duration_adj, na.rm = T))
       report$total_sleep <- mat2$Sleep_time[2]
-      # when merging that efficiency will be under "REST" for AMI and under "SLEEP" for Actiware
-      report$sleep_efficiency <- ifelse(mat$actigraph_brand[1] == "AMI", round(mat2$sleep_efficiency[1],2), round(mat2$sleep_efficiency[2],2) ) #round(mat2$sleep_efficiency[1],2) #
+      report$sleep_efficiency <- ifelse(mat$actigraph_brand[1] == "AMI", round(mat2$sleep_efficiency[1],2), round(mat2$sleep_efficiency[2],2) )
       report$longest_sleep_period <- mat2$longest_period[2]
       report$shortest_sleep_period <- mat2$shortest_period[2]
       report$with_excluded_bad <- FALSE
@@ -208,7 +160,7 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", shad
 
 # when there's a rest period without sleep AND no excluded or bad period, then total_sleep = sleep_efficiency = 0
 if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) > 0){ # if there's at least one sleep
-  if(rem == FALSE && all(mat0$actigraph_brand == "Actiware")){ # if no excluded
+  if(rem == FALSE && all(mat0$actigraph_brand == "Actiware")){
     if( all(is.na( filter(mat0, interval_type == "SLEEP")$datime_start)) == TRUE){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
 
     }
@@ -234,7 +186,6 @@ if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) == 0){ # if no sleep or r
 
       report <- cbind(row, report)
       report$summary_duration_h <- as.numeric(report$summary_duration_h)
-
       report2 <- rbind(report2, report)
 
     }
@@ -243,4 +194,5 @@ if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) == 0){ # if no sleep or r
 
   report2
 }
+
 
