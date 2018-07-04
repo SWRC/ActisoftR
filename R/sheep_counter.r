@@ -14,8 +14,8 @@
 #' sheep_counter(dat)
 #'
 #'# Example 2: using work data (randomly generated)
-#' datime_start <- rep( seq(ISOdatetime(2012,05,12,8,00,00, tz = "UTC"),(ISOdatetime(2012,05,12,8,00,00, tz = "UTC") + days(3)), length.out = 4), length(unique(dat$subject_ID)) )
-#' datime_end <- rep( seq(ISOdatetime(2012,05,12,16,00,00, tz = "UTC"),(ISOdatetime(2012,05,12,16,00,00, tz = "UTC") + days(3)), length.out = 4), length(unique(dat$subject_ID)) )
+#' datime_start <- rep( seq(ISOdatetime(2012,05,12,8,00,00, tz = "UTC"),(ISOdatetime(2012,05,12,8,00,00, tz = "UTC") + lubridate::days(3)), length.out = 4), length(unique(dat$subject_ID)) )
+#' datime_end <- rep( seq(ISOdatetime(2012,05,12,16,00,00, tz = "UTC"),(ISOdatetime(2012,05,12,16,00,00, tz = "UTC") + lubridate::days(3)), length.out = 4), length(unique(dat$subject_ID)) )
 #' df <- data.frame(datime_start = datime_start, datime_end = datime_end, subject_ID = rep(unique(dat$subject_ID),4))
 #' dif1 <- rnorm(nrow(df), 1,1)
 #' dif2 <- rnorm(nrow(df), 1,1)
@@ -28,14 +28,12 @@
 #' sheep_counter(dat2)
 
 
-
-
-
 #' @export
 #' @importFrom grDevices dev.new dev.off x11 windows
 #' @importFrom dplyr distinct left_join
 #' @importFrom scales date_breaks date_format
 #' @importFrom methods hasArg
+#' @importFrom lubridate days
 #' @import ggplot2
 
 
@@ -45,7 +43,6 @@ sheep_counter <- function(dat, tz = "UTC", interv = "10 mins", datebreaks = "2 h
 
   dat$datime_start <- as.POSIXct(dat$datime_start , format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
   dat$datime_end <- as.POSIXct(dat$datime_end , format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-
   dat <- dat[!is.na(dat$datime_start ),]
 
   dat2 <- dat[dat$interval_type == "SLEEP",]
@@ -82,10 +79,8 @@ sheep_counter <- function(dat, tz = "UTC", interv = "10 mins", datebreaks = "2 h
   tab3 <- tab2 / y #prop.table(tab2)
   tab3 <- data.frame(int=int[1 : length(tab3)],freq=tab3, interval_type = "SLEEP")
 
-
   p <-ggplot2::ggplot() +
     geom_line(data = tab3, aes(colour = interval_type, x = int,  y = freq))
-
 
   if (hasArg(work_data) == TRUE){
     tab22 <- rep(0, 60 * 24 / as.numeric(gsub("([0-9]*).*","\\1",interv)) )
@@ -116,19 +111,15 @@ sheep_counter <- function(dat, tz = "UTC", interv = "10 mins", datebreaks = "2 h
         tab <- as.data.frame(tab)
 
         tab22 <- as.vector(tab$Freq) + tab22
-        #print((tab22))
-
       }
     }
 
-    tab32 <- tab22 / yy #prop.table(tab2)
+    tab32 <- tab22 / yy
     tab32 <- data.frame(int=int[1 : length(tab32)],freq=tab32, interval_type = "WORK")
 
     tab32$int <-  as.POSIXct(paste(strftime(tab3$int, format="%Y-%m-%d", tz = tz), strftime(tab32$int, format="%H:%M:%S", tz = tz)), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
 
-  p <- p + geom_line(data = tab32, aes(colour = interval_type, x = int,  y = freq))
-    #geom_line(data = work, aes(colour = "WORK", x = int,  y = prop))
-
+    p <- p + geom_line(data = tab32, aes(colour = interval_type, x = int,  y = freq))
 
   }
 
@@ -143,6 +134,6 @@ sheep_counter <- function(dat, tz = "UTC", interv = "10 mins", datebreaks = "2 h
                        minor_breaks = date_breaks(datebreaks),
                        labels = date_format("%H.%M", tz = "UTC")) +
     xlab("Time (UTC) ") +
-    ylab("proportion")
+    ylab("proportion") + theme_bw()
 
 }
