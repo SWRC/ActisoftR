@@ -21,3 +21,4 @@ write_actigraph_csv <- function(x, path = "~",...){
   x <- x[, useful]
   write.csv(x, path)
 }
+
