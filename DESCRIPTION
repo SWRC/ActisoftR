@@ -1,15 +1,16 @@
 Package: ActisoftR
 Type: Package
-Title: Summarises actigraphy data
+Title: A toolbox for parsing scored actigraphy data
 Version: 0.0.1
-Date: 2016-12-29
+Date: 2018-07-01
 Depends: R (>= 3.1.0)
 Authors@R: c(person("Edgar", "Santos-Fernandez", , "edgar.santosfdez@gmail.com",
     c("aut")), person("Lora", "Wu", , "L.Wu@massey.ac.nz", c("aut", "cre")),
     person("Margo", "van den Berg", , "M.J.vandenBerg@massey.ac.nz", c("aut"
     )) )
+Maintainer: Lora Wu<L.Wu@massey.ac.nz>
 URL: https://github.com/SWRC/ActisoftR
-Description: A toolbox for importing and processing scored actigraphy data. Plots sleep and work data, and generates summary reports based on user input.
+Description: Actigraphy is a cost-effective and convenient tool for activity-based monitoring. ActisoftR was designed for parsing actigraphy outputs and to summarise scored data across user-defined intervals. It consists of several functions for importing, generating reports and statistics, and for data visualization.
 Imports: ggplot2,
     dplyr,
     scales,
@@ -18,7 +19,8 @@ Imports: ggplot2,
     data.table,
     magrittr,
     methods,
-    RColorBrewer
+    RColorBrewer,
+    tidyr
 Suggests:
     DT,
     Rcpp,
@@ -32,6 +34,5 @@ Suggests:
 License: GPL-2 | GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 VignetteBuilder: knitr
-
