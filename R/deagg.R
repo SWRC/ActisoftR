@@ -11,10 +11,6 @@
 #' p4$summary_start_datime <- lubridate::dmy_hm(p4$summary_start_datime,  tz = "UTC")
 #' p4$summary_end_datime <- lubridate::dmy_hm(p4$summary_end_datime,  tz = "UTC")
 #' d <- deagg(period = p4)
-#' #View(d)
-
-
-#'
 #'
 #' @export
 #' @importFrom dplyr filter mutate bind_rows
@@ -25,7 +21,6 @@ deagg <-  function(period){ #deaggregation
 
   df <- d2 <- particip <- ds0 <- ds <- matr <- df2 <- subject_ID <- summary_type <- NULL
   period <- tbl_df(period)
-  #period$summary_duration_h <- lubridate::hours(period$summary_duration_h)
 
   if( length(period$summary_end_datime[is.na(period$summary_end_datime)] > 0)){
     period$summary_end_datime[is.na(period$summary_end_datime)] <- period$summary_start_datime[is.na(period$summary_end_datime)] + hours(period$summary_duration_h[is.na(period$summary_end_datime)])
@@ -33,12 +28,9 @@ deagg <-  function(period){ #deaggregation
   period$summary_duration_h[!is.na(period$summary_duration_h)] <- as.numeric(period$summary_duration_h[!is.na(period$summary_duration_h)]) * 3600
 
   period$summary_duration_h[is.na(period$summary_duration_h)] <-
-    as.numeric(difftime(period$summary_end_datime[is.na(period$summary_duration_h)],  period$summary_start_datime[is.na(period$summary_duration_h)], units="secs")) #lubridate::seconds_to_period
+    as.numeric(difftime(period$summary_end_datime[is.na(period$summary_duration_h)],  period$summary_start_datime[is.na(period$summary_duration_h)], units="secs"))
 
-  #period$summary_duration_h[is.na(period$summary_duration_h)] <- as.numeric(difftime(period$summary_end_datime[is.na(period$summary_duration_h)],  period$summary_start_datime[is.na(period$summary_duration_h)], units="hours"))
-  #period$summary_end_datime[is.na(period$summary_duration_h)] -  period$summary_start_datime[is.na(period$summary_duration_h)]
-
-  particip <- as.vector(t(dplyr::distinct(period, subject_ID))) #actigraphy_file
+  particip <- as.vector(t(dplyr::distinct(period, subject_ID)))
 
   for (ii in 1 : length(particip)){
     ds0 <- ds <- matr <- NULL
@@ -51,7 +43,7 @@ deagg <-  function(period){ #deaggregation
 
       if (abs(as.numeric(difftime(dsl$summary_end_datime[1] , dsl$summary_start_datime[1], units = "days"))) > 1 ) {
         dsl2 <- dsl
-        dsl2$summary_end_datime <- dsl$summary_start_datime + dsl$summary_duration_h #days(dsl)
+        dsl2$summary_end_datime <- dsl$summary_start_datime + dsl$summary_duration_h
 
         dif <- as.numeric(dsl$summary_end_datime[1] - dsl2$summary_start_datime[1])
         dsl2 <- dsl2[rep(1 : nrow(dsl2), times = abs(dif)),]
