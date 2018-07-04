@@ -1,5 +1,3 @@
-
-
 #' Generates home night time periods
 #'
 #' This function is used by the Darwent plot
@@ -15,20 +13,22 @@
 #'
 #'
 #' @examples
-#' flight <- read.csv(file = 'C:\\1\\EXAMPLE_DATA\\Work\\work.csv', sep = ",",header = TRUE, skip = 0)
-#' flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
-#' flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
-#' flight <- flight[,-c(3,4)]
-#' colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
-#' homeTZ = data.frame(subject_ID = c("example01", "example01_AMI", "example02"), TZ = c(10,11,12))
-#' home.night.shade(x = flight, shadow.start = "22:00:00", shadow.end = "08:00:00", homeTZ = homeTZ, tz = "UTC")
+#' #flight <- read.csv(file = 'C:\\1\\EXAMPLE_DATA\\Work\\work.csv', sep = ",",header = TRUE, skip = 0)
+#' #flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
+#' #flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
+#' #flight <- flight[,-c(3,4)]
+#' #colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
+#' #homeTZ = data.frame(subject_ID = c("example01", "example01_AMI", "example02"), TZ = c(10,11,12))
+#' #home.night.shade(x = flight, shadow.start = "22:00:00", shadow.end = "08:00:00", homeTZ = homeTZ, tz = "UTC")
 
-#' home.night.shade(x = flight, shadow.start = "12:00:00", shadow.end = "22:00:00", homeTZ = homeTZ , tz = "UTC")
+#' #home.night.shade(x = flight, shadow.start = "12:00:00", shadow.end = "22:00:00", homeTZ = homeTZ , tz = "UTC")
 
 
 #' @export
 #' @importFrom lubridate hours hms
-#' @importFrom dplyr distinct
+#' @importFrom dplyr distinct if_else "%>%"
+#' @importFrom tidyr unnest
+#' @importFrom magrittr "%>%"
 #
 # used by the Darwent plot
 home.night.shade <- function(x, shadow.start = "20:00:00", shadow.end = "06:00:00", homeTZ , tz = "UTC",...){
@@ -69,22 +69,23 @@ home.night.shade <- function(x, shadow.start = "20:00:00", shadow.end = "06:00:0
 #'
 #'
 #' @examples
-#' flight <- read.csv(file = 'C:\\1\\EXAMPLE_DATA\\Work\\work.csv', sep = ",",header = TRUE, skip = 0)
-#' flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
-#' flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
-#' flight <- flight[,-c(3,4)]
-#' colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
-#'# create a data.frame with the worked days and the tz per ID.
-#' localTZ <- filter(flight, interval_type == "Work") %>% select(subject_ID, datime_start, datime_end, startTZ)
-#'names(localTZ)[4] <- "TZ"
-#' local.night.shade(localTZ = localTZ, shadow.start = "22:00:00", shadow.end = "08:00:00")
+#' #flight <- read.csv(file = 'C:\\1\\EXAMPLE_DATA\\Work\\work.csv', sep = ",",header = TRUE, skip = 0)
+#' #flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
+#' #flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "%d/%m/%Y %H:%M"), tz = "UTC"))
+#' #flight <- flight[,-c(3,4)]
+#' #colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
+#' # create a data.frame with the worked days and the tz per ID.
+#' #localTZ <- filter(flight, interval_type == "Work") %>% select(subject_ID, datime_start, datime_end, startTZ)
+#' #names(localTZ)[4] <- "TZ"
+#' #local.night.shade(localTZ = localTZ, shadow.start = "22:00:00", shadow.end = "08:00:00")
 
 #' @export
-#' @importFrom dplyr distinct filter tbl_df
+#' @importFrom dplyr distinct filter tbl_df if_else "%>%"
 #' @importFrom lubridate hours hms
+#' @importFrom magrittr "%>%"
 #'
 local.night.shade <- function(localTZ, shadow.start = "20:00:00",
-                              shadow.end = "06:00:00", tz = "UTC",...){ #
+                              shadow.end = "06:00:00", tz = "UTC",...){
 
   shadow.start <- hms(shadow.start)
   shadow.end <- hms(shadow.end)
@@ -95,9 +96,4 @@ local.night.shade <- function(localTZ, shadow.start = "20:00:00",
 
   shadow.startend
 }
-
-
-
-
-
 
