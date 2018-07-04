@@ -11,8 +11,6 @@ period_split <- function(period, ...){
   for (ii in 1 : length(particip)){
     tab <- filter(period, period$actigraphy_file == particip[ii])
      if (days(tab$summary_end_datime[1] - tab$summary_start_datime[1]) > days(1) ) {
-
-       #first.last.date <- as.Date(first.last)
        seqdates <- seq.Date(tab$summary_start_datime[1], tab$summary_end_datime[1])
      }
 
