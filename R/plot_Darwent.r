@@ -11,6 +11,9 @@
 #' @param si defines the size of the geom_segment, 8 by default.
 #' @param tz is the times zone. tz = "UTC" by default.
 #' @param tz2 an additional time zone used for a secondary x-axis.
+#' @param shadow.start is the starting time for adding shadow in the plot representing the night time.
+#' @param shadow.end is the end time for adding shadow in the plot representing the night time.
+#' @param show_plot logical to produce the plot or not.
 #' @param ... optional parameters.
 #' @return a plot.
 #'
@@ -29,7 +32,7 @@
 #'
 #' @export
 #' @importFrom grDevices dev.new dev.off x11 windows
-#' @importFrom dplyr distinct left_join
+#' @importFrom dplyr distinct left_join arrange summarize
 #' @importFrom scales date_breaks date_format
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom lubridate is.POSIXct floor_date tz ceiling_date
@@ -44,7 +47,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
                          tz = "UTC", tz2,...){
 
   subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <-
-  grayzone.end <- dec <- HNS <- LNS <- NULL
+  grayzone.end <- dec <- HNS <- LNS <- homeTZ <- min_date <- NULL
 
   foo <- as.data.frame(x)
   foo <- foo[!is.na(foo$datime_start),]
@@ -143,7 +146,7 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
                                                         breaks = x_axis_lab_num,
               labels = format(x_axis_lab, format = "%H:%M", tz = tz),
               sec.axis = sec_axis(~ . + 0, breaks = x_axis_lab_num,
-              labels = format(with_tz(x_axis_lab, tz = tz2),
+              labels = format(with_tz(x_axis_lab, tzone = tz2),
               format = "%H:%M"), name = paste("Time in", tz2)) ) } + {
 
   if(missing(tz2) == TRUE) scale_x_continuous(paste("Time in", tz),
@@ -179,6 +182,8 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 #' @param tz2 an additional time zone.
 #' @param sp the starting point in the x-axis. Set as 00:00:00 by default.
 #' @param with_date allows adding the cutpoint date to the y-axis. with_date = FALSE by default.
+#' @param alphas is the transparency.
+#' @param hourbreaks is the number of labels on the x-axis.
 #' @param ... Optional parameters.
 #' @return a plot.
 #'
@@ -300,7 +305,7 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
 
   if(missing(tz2)){labs = b}
   else{ b2 <- strptime(paste("01-01-2000", b), format= "%d-%m-%Y %H:%M", tz = tz) #"EST"
-  b2EST <- with_tz(b2, tz = tz2)
+  b2EST <- with_tz(b2, tzone = tz2)
   hmEST <- format(b2EST, format="%H:%M", usetz = TRUE)
   labs <- paste(b, hmEST, sep = "\n")
 
@@ -330,10 +335,5 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   p
 
 }
-
-
-
-
-
 
 
