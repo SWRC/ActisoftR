@@ -31,8 +31,8 @@
 #' @importFrom dplyr filter mutate summarise n
 #' @importFrom lubridate dmy_hm dmy_hms ymd_hms days with_tz
 
-report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", shade,...){
-  with_tz <- summary_type <- subject_ID <- duration_adj <- sleep_time_adj <- NULL
+report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", ...){
+  with_tz <- summary_type <- subject_ID <- duration_adj <- sleep_time_adj <- interval_number <- NULL
 
 
   period <- with_tz(period, tz = tz)
