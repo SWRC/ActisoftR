@@ -41,6 +41,7 @@ portion <- function(x, from , to , ...){ #all = TRUE,
 #' @param x a dataframe
 #' @param from a vector of lenght = participants
 #' @param to a vector of lenght = participants
+#' @param tz is the time zone
 #' @param ... Optional parameters
 #'
 #' @return a dataframe
@@ -76,3 +77,4 @@ portion_withoverlaps <- function(x, from , to , tz = "UTC", ...){
   }
   mat2
 }
+
