@@ -92,8 +92,8 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE, ylabel, ...){
   }
 
   if(missing(ylabel)){ylabel <- "Cum sleep debt (in minutes)"}
-  p <- ggplot2::ggplot(data = out2, aes(colour = subject_ID, x = period_number, y = cumsum_reset,
-                          group = subject_ID)) +
+  p <- ggplot2::ggplot(data = out2, aes_string(colour = 'subject_ID', x = 'period_number', y = 'cumsum_reset',
+                          group = 'subject_ID')) +
     geom_line() +
     xlab("Period number") + ylab(ylabel) +
     geom_point()    + scale_x_continuous(breaks =  seq(1,max(out2$period_number),1)) +
@@ -104,8 +104,4 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE, ylabel, ...){
  else return(out2)
 
  }
-
-
-
-
 
