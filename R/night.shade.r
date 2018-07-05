@@ -1,3 +1,4 @@
+
 #' Generates home night time periods
 #'
 #' This function is used by the Darwent plot
@@ -5,9 +6,10 @@
 #' @param x a dataframe
 #' @param shadow.start starting time of the home night, 22:00:00 by defaults
 #' @param shadow.end ending time of the home night, 08:00:00 by defaults
-#' @param TZ participant's home time zone. A data frame containing for each participant
+#' @param homeTZ participant's home time zone. A data frame containing for each participant
 #' corresponding home time zone.
 #' @param ... Optional parameters
+#' @param tz is the time zone
 #'
 #' @return a dataframe
 #'
@@ -32,13 +34,14 @@
 #
 # used by the Darwent plot
 home.night.shade <- function(x, shadow.start = "20:00:00", shadow.end = "06:00:00", homeTZ , tz = "UTC",...){
+  min_date <- max_date <- subject_ID <- NULL
   shadow.start <- hms(shadow.start)
   shadow.end <- hms(shadow.end)
   nightdur <- if_else(shadow.start > shadow.end, shadow.end + hours(24) - shadow.start, shadow.end - shadow.start)
 
-  first.last <- x %>% dplyr::group_by(subject_ID) %>%
-    summarise(min_date = as.Date(min(datime_start, na.rm = TRUE), tz = tz),
-              max_date = as.Date(max(datime_start, na.rm = TRUE), tz = tz))
+  first.last <- x %>% dplyr::group_by('subject_ID') %>%
+    summarise(min_date = as.Date(min('datime_start', na.rm = TRUE), tz = tz),
+              max_date = as.Date(max('datime_start', na.rm = TRUE), tz = tz))
 
   first.last <- first.last %>%
     left_join(homeTZ, by = c("subject_ID" = "subject_ID")) %>%
@@ -77,15 +80,15 @@ home.night.shade <- function(x, shadow.start = "20:00:00", shadow.end = "06:00:0
 #' # create a data.frame with the worked days and the tz per ID.
 #' #localTZ <- filter(flight, interval_type == "Work") %>% select(subject_ID, datime_start, datime_end, startTZ)
 #' #names(localTZ)[4] <- "TZ"
-#' #local.night.shade(localTZ = localTZ, shadow.start = "22:00:00", shadow.end = "08:00:00")
+#' #local.night.shade(x = localTZ, shadow.start = "22:00:00", shadow.end = "08:00:00")
 
 #' @export
 #' @importFrom dplyr distinct filter tbl_df if_else "%>%"
 #' @importFrom lubridate hours hms
 #' @importFrom magrittr "%>%"
 #'
-local.night.shade <- function(localTZ, shadow.start = "20:00:00",
-                              shadow.end = "06:00:00", tz = "UTC",...){
+local.night.shade <- function(x, shadow.start = "20:00:00",
+                              shadow.end = "06:00:00", localTZ, ...){
 
   shadow.start <- hms(shadow.start)
   shadow.end <- hms(shadow.end)
