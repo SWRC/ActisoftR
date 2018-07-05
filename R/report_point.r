@@ -1,4 +1,3 @@
-
 #' Generates reports based on input points.
 #'
 #' @param period a dataframe containing participants, start and end date/time interval
@@ -26,7 +25,7 @@
 
 report_point <- function(period, acti_data, tz = "UTC",...){
 
-  with_tz <- subject_ID <- interval_type <- datime_end <- NULL
+  with_tz <- subject_ID <- interval_type <- datime_end <- po <- NULL
   period <- with_tz(period, tz = tz)
   particip <- as.vector(t(distinct(period, subject_ID)))
 
