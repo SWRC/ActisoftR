@@ -21,14 +21,15 @@
 
 
 read_actigraph_csv <- function(x = "PATH_TO_DATA", tz = "UTC", ...){
-interval_type <- NULL
-
+interval_type <- rem_tag <- NULL
+  rem_tag <- FALSE
   if (dir.exists(paths = paste(x,"//AMI", sep = "")) == FALSE &
       dir.exists(paths = paste(x,"//Actiware", sep = "")) == FALSE){
       files0 <- list.files( path = x, pattern = "*.csv")
 
       dir.create(path = paste(x,"//AMI", sep = ""), showWarnings = TRUE, recursive = FALSE, mode = "0777")
       dir.create(path = paste(x,"//Actiware", sep = ""), showWarnings = TRUE, recursive = FALSE, mode = "0777")
+      rem_tag <- TRUE
 
       for (ii in 1 : length(files0)){
         one <- data.table::rbindlist(lapply(paste(x,"\\",files0[ii], sep = ""),
@@ -44,7 +45,7 @@ interval_type <- NULL
 
   }
 
-    files <- list.files( path = paste(x,"\\Actiware", sep=""), pattern = "*.csv")
+  files <- list.files( path = paste(x,"\\Actiware", sep=""), pattern = "*.csv")
 
   if (length(files) > 0){
   dat <- data.table::rbindlist(lapply(paste(x, "\\Actiware\\", files, sep = ""), function(x) read_csv_filename(x)), use.names = TRUE, fill = TRUE )
@@ -84,6 +85,13 @@ interval_type <- NULL
   }
 
   else dat2 <- NULL
+
+  if(rem_tag == TRUE){
+    # will remove the folder created above
+    unlink( paste(x,"//AMI", sep = ""), recursive = T)
+    unlink( paste(x,"//Actiware", sep = ""), recursive = T)
+  }
+
   ll <- list(dat, dat2)
   alldata <- data.table::rbindlist(ll, use.names = TRUE, fill = TRUE, idcol=FALSE)
   alldata <- alldata %>% dplyr::mutate(interval_type = factor(interval_type, levels = c("REST", "SLEEP", "ACTIVE","EXCLUDED", "Down","O - O","Up", "24-Hr" )))
