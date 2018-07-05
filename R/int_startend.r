@@ -1,7 +1,9 @@
 
+
 #' Returns the starting/ending point of a report
 #'
 #' @param x a dataframe
+#' @param tz is the time zone
 #' @param ... Optional parameters
 #'
 #' @return a dataframe
