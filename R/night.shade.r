@@ -34,19 +34,19 @@
 #
 # used by the Darwent plot
 home.night.shade <- function(x, shadow.start = "20:00:00", shadow.end = "06:00:00", homeTZ , tz = "UTC",...){
-  min_date <- max_date <- subject_ID <- NULL
+  min_date <- max_date <- subject_ID <- subject_ID <- datime_start <- NULL
   shadow.start <- hms(shadow.start)
   shadow.end <- hms(shadow.end)
   nightdur <- if_else(shadow.start > shadow.end, shadow.end + hours(24) - shadow.start, shadow.end - shadow.start)
 
-  first.last <- x %>% dplyr::group_by('subject_ID') %>%
-    summarise(min_date = as.Date(min('datime_start', na.rm = TRUE), tz = tz),
-              max_date = as.Date(max('datime_start', na.rm = TRUE), tz = tz))
+  first.last <- x %>% dplyr::group_by(subject_ID) %>%
+    summarise(min_date = as.Date(min(datime_start, na.rm = TRUE), tz = tz),
+              max_date = as.Date(max(datime_start, na.rm = TRUE), tz = tz))
 
   first.last <- first.last %>%
     left_join(homeTZ, by = c("subject_ID" = "subject_ID")) %>%
     group_by(subject_ID) %>%
-    mutate(date = list(seq(min_date, max_date, by ='1 day') ), created_at = NULL) %>%
+    mutate(date = list(data.frame(date = seq(min_date, max_date, by ='1 day') )), created_at = NULL) %>%
     unnest()
 
   shadow.startend <- data.frame(subject_ID = first.last$subject_ID, datime_start = ymd_hms(paste(first.last$date, shadow.start), tz = tz) + lubridate::hours(first.last$TZ),
@@ -99,4 +99,7 @@ local.night.shade <- function(x, shadow.start = "20:00:00",
 
   shadow.startend
 }
+
+
+
 
