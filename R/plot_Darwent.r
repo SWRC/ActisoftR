@@ -1,8 +1,6 @@
 #' Plots participants' SLEEP/WAKE intervals.
 #'
 #' @param x a dataframe.
-#' @param shade if TRUE, it will draw in light green the home night period. FALSE by default.
-#' @param local.shade if TRUE, it will draw in gray the local night period. FALSE by default.
 #' @param datebreaks is the distance between breaks in the x-axis. "12 hour" by default.
 #' @param acolor specifies the colors for the interval_type.
 #' @param decal is a parameter for shifting the start date.
@@ -11,9 +9,9 @@
 #' @param si defines the size of the geom_segment, 8 by default.
 #' @param tz is the times zone. tz = "UTC" by default.
 #' @param tz2 an additional time zone used for a secondary x-axis.
-#' @param shadow.start is the starting time for adding shadow in the plot representing the night time.
-#' @param shadow.end is the end time for adding shadow in the plot representing the night time.
 #' @param show_plot logical to produce the plot or not.
+#' @param shade (deprecated) if TRUE, it will draw in light green the home night period. FALSE by default.
+#' @param local.shade (deprecated) if TRUE, it will draw in gray the local night period. FALSE by default.
 #' @param ... optional parameters.
 #' @return a plot.
 #'
@@ -41,10 +39,9 @@
 #' @import RColorBrewer
 #' @rdname plot.Darwent
 
-plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12 hour",
+plot_Darwent <- function(x, datebreaks = "12 hour",
                          base = "TRUE", acolor, decal, export = FALSE, show_plot = TRUE,
-                          si, shadow.start = "20:00:00", shadow.end = "06:00:00",
-                         tz = "UTC", tz2,...){
+                          si, tz = "UTC", tz2, shade = FALSE, local.shade = FALSE, ...){
 
   subject_ID <- datime_start <- interval_type <- datime_end <- grayzone.start <-
   grayzone.end <- dec <- HNS <- LNS <- homeTZ <- min_date <- NULL
@@ -81,6 +78,8 @@ plot_Darwent <- function(x, shade = FALSE, local.shade = FALSE, datebreaks = "12
 
   if(missing(decal)){ decal = data.frame(subject_ID = participant, dec = rep(0, part))}
 
+
+  if(missing(homeTZ)){homeTZ = data.frame(subject_ID = participant, TZ = rep(0, length(participant)))}
   if(shade == TRUE){HNS <- home.night.shade(x = foo, homeTZ = homeTZ)} #, tz = tz
   if(local.shade == TRUE){LNS <- local.night.shade(localTZ = localTZ)}
 
@@ -335,5 +334,8 @@ plot_long <- function(dat, acolor, si, tz = "UTC", tz2, sp = "00:00:00", with_da
   p
 
 }
+
+
+
 
 
