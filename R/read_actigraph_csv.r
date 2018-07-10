@@ -1,8 +1,8 @@
-#' Imports scored actigraphy data from different actigraph brand output files.
+#' Imports scored actigraphy output data from different actigraph brands.
 #'
 #' Specify the path to the files. So far it supports CSV files only.
 #' The imported files are merged creating an organic single file.
-#' If the CSV files have different number of columns the function will fill missing columns with NAs.
+#' If the CSV files have a different number of columns the function will fill missing columns with NAs.
 #'
 #' @param x the file path
 #' @param tz the time zone
@@ -38,13 +38,14 @@ interval_type <- rem_tag <- NULL
         if (any(colnames(one) == "ID")){ write.csv(one, paste(x,"\\AMI\\",files0[ii], sep = "") ) }
         if (any(colnames(one) == "analysis_name")){ write.csv(one, paste(x,"\\Actiware\\",files0[ii], sep = "") ) }
         if ( any(colnames(one) == "ID") == FALSE  && any(colnames(one) == "analysis_name") == FALSE){
-          print("there is at least a file that is not of the from AMI or Actiware in the folder. File(s) where not
+          print("there is at least one file that is not output from AMI or Actiware in the folder. File(s) were not
                 imported")
         }
         }
 
   }
 
+  # Importing Actiware output files                                         
   files <- list.files( path = paste(x,"\\Actiware", sep=""), pattern = "*.csv")
 
   if (length(files) > 0){
@@ -63,7 +64,7 @@ interval_type <- rem_tag <- NULL
   ## default bad set to NA -- bad variable is equivalent to having an EXCLUDED interval overalap with a user requested interval
   ## if there is an overlap, the bad variable will be filled in with something other than NA and 0 in the report
 
-  # Importing from AMI actigraphs
+  # Importing AMI output files
   files2 <- list.files( path = paste(x,"\\AMI", sep=""), pattern = "*.csv")
   if (length(files2) > 0){
   dat2 <- data.table::rbindlist(lapply(paste(x, "\\AMI\\", files2, sep = ""), function(x) read_csv_filename(x)), use.names = TRUE, fill = TRUE)
@@ -76,7 +77,7 @@ interval_type <- rem_tag <- NULL
   dat2 <- tibble::add_column(dat2, actigraph_brand = rep("AMI", nrow(dat2)), .before = 1)
   dat2 <- tibble::add_column(dat2, subject_ID = rep(NA, nrow(dat2)), .before = 2)
 
-  # using the variables names from Actiware
+  # match variable names from Actiware
   data.table::setnames(dat2, old = c("ID", "IntName", "IntNum", "sdate", "stime", "edate", "etime", "dur", "smin", "pslp" ), new = c("analysis_name", "interval_type", "interval_number", "start_date", "start_time", "end_date", "end_time", "duration", "sleep_time", "efficiency"))
 
   dat2$subject_ID <- gsub("_.*$", "", dat2$analysis_name)
