@@ -1,4 +1,4 @@
-#' Generates reports based on input periods.
+#' Generates reports based on input parameters.
 #'
 #'
 #' @param period a dataframe containing participants and the start and end date/time periods.
@@ -13,7 +13,7 @@
 #' In that case all summary estimates except ‘time in bed’ will be set to NA,
 #' and the column ‘with_excluded_bad’ will show a TRUE. See examples in the Vignettes.
 #' This can be avoided using remove_bad = FALSE.
-#' Sleep efficiency will be zero when there is an attempt to sleep (no sleep achieved in the period) within a rest.
+#' Sleep efficiency will be 0 when there is an attempt to sleep but no sleep is achieved in the rest/down period.
 #' However, the sleep efficiency will be NA when there is not REST or SLEEP with in an interval of time.
 #'
 #' @examples
@@ -142,7 +142,7 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", ...)
       y <- y +  1
 
       if (remove_bad == TRUE){
-        if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period is partially scored as Bad
+        if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period partially scored as Bad
           report$number_of_rests_exact <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <-
           report$longest_sleep_period <- report$shortest_sleep_period <- NA
           report$with_excluded_bad <- TRUE
