@@ -44,8 +44,9 @@ Motivation and problem:
 * Often, actigraphy data comes from multiple wristwatches brands and versions. These files tend to differ in formats, variables, etc; which becomes more complex when dealing with large datasets.
 * To best of our knowledge, there are not R functions available for effectively processing and visualizing this sort of dataset.
 
+
 The package consists of several functions for importing, generating reports, summary statistics, and for data visualization.  
-It handles output files from several actigraphs including ActionW (Ambulatory Moniotring, Inc.) and from Actiware (Philips Respironics). 
+It handles output files from several actigraphs including ActionW (Ambulatory Monitoring, Inc.) and Actiware (Philips Respironics). 
 
 ```{r, echo = T, warning = F, message=F}
 library("lubridate")
@@ -54,6 +55,26 @@ library("ggplot2")
 library("DT")
 library("plotly")
 library("RColorBrewer")
+
+The package consists of several functions for importing, generating reports, summary statistics, and for data visualization.  
+It handles output files from several actigraphs including ActionW (Ambulatory Monitoring, Inc.) and from Actiware (Philips Respironics). 
+
+```{r, echo = T, warning = F, message=F}
+library("lubridate")
+library("dplyr")
+library("ggplot2")
+```
+				
+```{r, echo = F, warning = F, message = F}
+library("ActisoftR")
+library("DT")
+library("plotly")
+library("RColorBrewer")
+
+load("C:\\1\\ActisoftR\\data\\act.RData")
+
+act$datime_start <- ymd_hms(act$datime_start, tz = "UTC")
+act$datime_end <- ymd_hms(act$datime_end, tz = "UTC" )
 ```
 				
 
@@ -67,10 +88,12 @@ or directly from Github:
 devtools::install_github("SWRC/ActisoftR")
 ```
 
+
 ```{r, include=TRUE, echo = T, warning = F, message=F}
 library("ActisoftR")
 data("act")
 ```
+
 
 # Importing
 Actigraphy output files are imported using the function ```read_actigraph_csv()```. This only requires specifying the path.
@@ -261,12 +284,21 @@ This parameter was negative in the first two days since the total sleep time was
 Notice that this participant required four days to adapt to the new time zone ( ```csd``` returned to zero).
 
 
+
  
 
+ 
 
 # Other useful functions        
 
+
 The ```sheep_counter()``` function computes the empirical probability that a group of individuals are sleeping at a given time of the day. It can be seen as the proportion of participants that are sleeping. 
+
+=======
+# Other useful functions        
+
+The ```sheep_counter()``` function computes the empirical probability that a group of individuals are sleeping at a given time of the day. It can be seen as the proportion of participants that are sleeping. 
+
 
 ```{r, eval = F}
 sheep_counter(data, tz = "UTC", interv = "10 mins", datebreaks = "2 hour")
