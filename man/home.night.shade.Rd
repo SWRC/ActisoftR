@@ -4,8 +4,8 @@
 \alias{home.night.shade}
 \title{Generates home night time periods}
 \usage{
-home.night.shade(x, shadow.start = "22:00:00", shadow.end = "08:00:00",
-  TZ = 0, ...)
+home.night.shade(x, shadow.start = "20:00:00", shadow.end = "06:00:00",
+  homeTZ, tz = "UTC", ...)
 }
 \arguments{
 \item{x}{a dataframe}
@@ -14,9 +14,10 @@ home.night.shade(x, shadow.start = "22:00:00", shadow.end = "08:00:00",
 
 \item{shadow.end}{ending time of the home night, 08:00:00 by defaults}
 
-\item{TZ}{participant's home time zone}
-
 \item{...}{Optional parameters}
+
+\item{TZ}{participant's home time zone. A data frame containing for each participant
+corresponding home time zone.}
 }
 \value{
 a dataframe
@@ -25,7 +26,12 @@ a dataframe
 This function is used by the Darwent plot
 }
 \examples{
-# home.night.shade(x = flight, shadow.start = "22:00:00",
-# shadow.end = "08:00:00")
+#flight <- read.csv(file = 'C:\\\\1\\\\EXAMPLE_DATA\\\\Work\\\\work.csv', sep = ",",header = TRUE, skip = 0)
+#flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "\%d/\%m/\%Y \%H:\%M"), tz = "UTC"))
+#flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "\%d/\%m/\%Y \%H:\%M"), tz = "UTC"))
+#flight <- flight[,-c(3,4)]
+#colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
+#homeTZ = data.frame(subject_ID = c("example01", "example01_AMI", "example02"), TZ = c(10,11,12))
+#home.night.shade(x = flight, shadow.start = "22:00:00", shadow.end = "08:00:00", homeTZ = homeTZ, tz = "UTC")
+#home.night.shade(x = flight, shadow.start = "12:00:00", shadow.end = "22:00:00", homeTZ = homeTZ , tz = "UTC")
 }
-

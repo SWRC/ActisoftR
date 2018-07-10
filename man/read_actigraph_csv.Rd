@@ -2,12 +2,14 @@
 % Please edit documentation in R/read_actigraph_csv.r
 \name{read_actigraph_csv}
 \alias{read_actigraph_csv}
-\title{Imports data from different actigraphs output files.}
+\title{Imports scored actigraphy data from different actigraph brand output files.}
 \usage{
-read_actigraph_csv(x = "EXAMPLE_DATA", ...)
+read_actigraph_csv(x = "PATH_TO_DATA", tz = "UTC", ...)
 }
 \arguments{
 \item{x}{the file path}
+
+\item{tz}{the time zone}
 
 \item{...}{Optional parameters}
 }
@@ -15,13 +17,11 @@ read_actigraph_csv(x = "EXAMPLE_DATA", ...)
 a dataframe
 }
 \description{
-Place in your working directory the folder EXAMPLE_DATA containing the subfolders 'Actiware' and 'AMI'.
-It imports all the CSV files from the above folders and so far, it supports CSV files only. A standard file name is not required.
+Specify the path to the files. So far it supports CSV files only.
 The imported files are merged creating an organic single file.
 If the CSV files have different number of columns the function will fill missing columns with NAs.
 }
 \examples{
-head(read_actigraph_csv(x = "C:\\\\1\\\\EXAMPLE_DATA"))
+\dontrun{read_actigraph_csv(x = "C:\\\\1\\\\EXAMPLE_DATA")}
 
 }
-

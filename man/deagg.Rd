@@ -22,8 +22,5 @@ p4 <- read.csv(file = paste("C:\\\\1\\\\EXAMPLE_DATA_2\\\\input parameters examp
 p4$summary_start_datime <- lubridate::dmy_hm(p4$summary_start_datime,  tz = "UTC")
 p4$summary_end_datime <- lubridate::dmy_hm(p4$summary_end_datime,  tz = "UTC")
 d <- deagg(period = p4)
-#View(d)
-
 
 }
-

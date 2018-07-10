@@ -4,12 +4,14 @@
 \alias{report_point}
 \title{Generates reports based on input points.}
 \usage{
-report_point(period, acti_data, ...)
+report_point(period, acti_data, tz = "UTC", ...)
 }
 \arguments{
 \item{period}{a dataframe containing participants, start and end date/time interval}
 
 \item{acti_data}{a dataframe of the form "acti_data".}
+
+\item{tz}{is the time zone. Optional argument. tz = "UTC" by default.}
 
 \item{...}{Optional parameters}
 }
@@ -19,12 +21,15 @@ a dataframe
 \description{
 Generates reports based on input points.
 }
-\examples{
-input.param.point <- read.csv(file = paste("C:\\\\1\\\\EXAMPLE_DATA\\\\input parameters example point.csv"), sep = ",", header = TRUE, skip = 0)
-library("lubridate")
-input.param.point$time_point_datime <- dmy_hm(input.param.point$time_point_datime,  tz = "UTC")
-acti_data <- read_actigraph_csv(x = "C:\\\\1\\\\EXAMPLE_DATA")
-rep3 <- report_point(period = input.param.point, acti_data = acti_data)
-View (rep3)
+\details{
+Periods partially scored as 'bad' or 'EXCLUDED' are due to off-wrist or other reasons.
+In that case the column ‘with_excluded_bad’ will show TRUE. See examples in the Vignettes.
 }
-
+\examples{
+# Example 1
+library(lubridate)
+par_point <- data.frame(subject_ID = c(1,1),
+                       time_point_datime = ymd_hms(c("2017-12-06 00:00:00 UTC",
+                       "2017-12-07 00:00:00 UTC")))
+report_point(period = par_point, acti_data = act)
+}

@@ -16,6 +16,5 @@ a dataframe
 Imports a CSV file and attaches the file path as a column.
 }
 \examples{
-read_csv_filename("C:\\\\1\\\\EXAMPLE_DATA\\\\Actiware\\\\example1.csv")
+ \dontrun{read_csv_filename("C:\\\\1\\\\EXAMPLE_DATA\\\\Actiware\\\\example1.csv")}
 }
-

@@ -4,13 +4,13 @@
 \alias{plot_Darwent}
 \title{Plots participants' SLEEP/WAKE intervals.}
 \usage{
-plot_Darwent(x, acolor, shade = FALSE, local.shade = FALSE,
-  datebreaks = "12 hour", ...)
+plot_Darwent(x, shade = FALSE, local.shade = FALSE,
+  datebreaks = "12 hour", base = "TRUE", acolor, decal, export = FALSE,
+  show_plot = TRUE, si, shadow.start = "20:00:00",
+  shadow.end = "06:00:00", tz = "UTC", tz2, ...)
 }
 \arguments{
 \item{x}{a dataframe.}
-
-\item{acolor}{specifies the colors for the interval_type.}
 
 \item{shade}{if TRUE, it will draw in light green the home night period. FALSE by default.}
 
@@ -18,35 +18,37 @@ plot_Darwent(x, acolor, shade = FALSE, local.shade = FALSE,
 
 \item{datebreaks}{is the distance between breaks in the x-axis. "12 hour" by default.}
 
-\item{...}{Optional parameters}
+\item{base}{matches the participants at the same start date.}
+
+\item{acolor}{specifies the colors for the interval_type.}
+
+\item{decal}{is a parameter for shifting the start date.}
+
+\item{export}{if TRUE, it will export the data as CSV.}
+
+\item{si}{defines the size of the geom_segment, 8 by default.}
+
+\item{tz}{is the times zone. tz = "UTC" by default.}
+
+\item{tz2}{an additional time zone used for a secondary x-axis.}
+
+\item{...}{optional parameters.}
 }
 \value{
-a plot
+a plot.
 }
 \description{
 Plots participants' SLEEP/WAKE intervals.
 }
 \examples{
-acti_data <- read_actigraph_csv(x = "C:\\\\1\\\\EXAMPLE_DATA")
 library("dplyr")
-#fil <- acti_data[acti_data$interval_type == "SLEEP" | acti_data$interval_type == "REST",]
-#fil <- fil[fil$actigraph == "Actiware",]
-fil <- dplyr::filter(acti_data, interval_type == "SLEEP" | interval_type == "REST", actigraph == "Actiware")
-fil <- dplyr::tbl_df(fil)
-fil <- dplyr::select(fil, subject_ID, interval_type, interval_number, datime_start, datime_end)
-plot_Darwent(x = fil, shade = FALSE, datebreaks = "1 day")
-# Example # 2
-# using flight data
-flight <- read.csv(file = 'C:\\\\1\\\\EXAMPLE_DATA\\\\Work\\\\work.csv', sep = ",",header = TRUE, skip = 0)
-flight$datime_start <- paste( as.POSIXct( strptime( flight$StartDatime, format = "\%d/\%m/\%Y \%H:\%M"), tz = "UTC"))
-flight$datime_end <- paste( as.POSIXct( strptime( flight$EndDatime, format = "\%d/\%m/\%Y \%H:\%M"), tz = "UTC"))
-flight <- flight[,-c(3,4)]
-colnames(flight) <- c("subject_ID", "startTZ", "endTZ", "interval_type","datime_start", "datime_end")
-flight <- tbl_df(flight)
-homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3), decal = c(0,0,5))
-head(flight)
-#plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, datebreaks = "1 day")
-part_homeTZ <- data.frame (subject_ID = c("example01", "example01_AMI", "example02"), homeTZ = rep(2,3), decal = c(0,0,5))
-plot_Darwent(x = flight, acolor = c("#56B4E9", "#990000"), shade = TRUE, local.shade = TRUE, datebreaks = "1 day")
-}
+library("lubridate")
+data(act)
+act \%>\% group_by(subject_ID) \%>\%
+  mutate(start = min(datime_start)) \%>\%
+  ungroup \%>\% filter(datime_start <= start + days(15), interval_type != "ACTIVE") \%>\%
+   plot_Darwent(.,  acolor = c("#D55E00", "black", "#56B4E9"),
+                  tz2 = "Pacific/Auckland",
+                  si = c(4, 3, 2.5))
 
+}

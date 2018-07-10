@@ -4,7 +4,7 @@
 \alias{int_startend}
 \title{Returns the starting/ending point of a report}
 \usage{
-int_startend(x, ...)
+int_startend(x, tz = "UTC", ...)
 }
 \arguments{
 \item{x}{a dataframe}
@@ -17,4 +17,3 @@ a dataframe
 \description{
 Returns the starting/ending point of a report
 }
-

@@ -6,7 +6,7 @@
 #' @return a dataframe
 #'
 #' @examples
-#' read_csv_filename("C:\\1\\EXAMPLE_DATA\\Actiware\\example1.csv")
+#'  \dontrun{read_csv_filename("C:\\1\\EXAMPLE_DATA\\Actiware\\example1.csv")}
 #' @export
 
 read_csv_filename <- function(filename){

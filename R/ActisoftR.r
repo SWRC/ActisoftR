@@ -1,7 +1,4 @@
-#' ActisoftR: Parsing actigraphy data
-#'
-#' A toolbox for importing and processing actigraph like data. It allows plotting and generating multiple reports.
-#'
+#' ActisoftR: A toolbox for parsing scored actigraphy data.
 #'
 #'
 #' @docType package

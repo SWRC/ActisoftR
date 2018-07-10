@@ -4,12 +4,16 @@
 \alias{report_period}
 \title{Generates reports based on input periods.}
 \usage{
-report_period(period, acti_data, ...)
+report_period(period, acti_data, remove_bad = TRUE, tz = "UTC", shade, ...)
 }
 \arguments{
-\item{period}{a dataframe containing participants, start and end date/time period}
+\item{period}{a dataframe containing participants and the start and end date/time periods.}
 
-\item{acti_data}{a dataframe of the form "acti_data".}
+\item{acti_data}{a dataframe of the form 'acti_data'.}
+
+\item{remove_bad}{a logical value used to indicate if 'bad' intervals or 'EXCLUDED' are removed. Set as TRUE.}
+
+\item{tz}{is the time zone. Optional argument. tz = "UTC" by default.}
 
 \item{...}{Optional parameters}
 }
@@ -19,39 +23,22 @@ a dataframe
 \description{
 Generates reports based on input periods.
 }
+\details{
+Periods partially scored as 'bad' or 'EXCLUDED' are due to off-wrist or other reasons.
+In that case all summary estimates except ‘time in bed’ will be set to NA,
+and the column ‘with_excluded_bad’ will show a TRUE. See examples in the Vignettes.
+This can be avoided using remove_bad = FALSE.
+Sleep efficiency will be zero when there is an attempt to sleep (no sleep achieved in the period) within a rest.
+However, the sleep efficiency will be NA when there is not REST or SLEEP with in an interval of time.
+}
 \examples{
 # Example 1
-library(lubridate)
-acti_data <- read_actigraph_csv(x = "C:\\\\1\\\\EXAMPLE_DATA")
-p <- read.csv(file = paste("C:\\\\1\\\\EXAMPLE_DATA\\\\input parameters example period.csv"),
- sep = ",", header = TRUE, skip = 0)
-p$summary_start_datime <- dmy_hm(p$summary_start_datime,  tz = "UTC")
-p$summary_end_datime <- dmy_hm(p$summary_end_datime,  tz = "UTC")
-rep1 <- report_period(period = p , acti_data = acti_data)
-#View(rep1)
-# Example 2
-acti_data2 <- read_actigraph_csv(x = "C:\\\\1\\\\EXAMPLE_DATA_2")
-p2 <- read.csv(file = paste("C:\\\\1\\\\EXAMPLE_DATA\\\\input parameters example period2.csv"),
- sep = ",", header = TRUE, skip = 0)
-p2$summary_start_datime <- lubridate::dmy_hms(p2$summary_start_datime,  tz = "UTC")
-p2$summary_end_datime <- lubridate::dmy_hms(p2$summary_end_datime,  tz = "UTC")
-rep2 <- report_period(period = p2 , acti_data = acti_data2)
-#View(rep2)
-# Example 3
-acti_data2 <- read_actigraph_csv(x = "C:\\\\1\\\\EXAMPLE_DATA_2")
-p3 <- read.csv(file = paste("C:\\\\1\\\\EXAMPLE_DATA_2\\\\input parameters example period for MVB_09-05-2016_163631_AWedited2.csv"),
- sep = ",", header = TRUE, skip = 0)
-p3$summary_start_datime <- lubridate::dmy_hm(p3$summary_start_datime,  tz = "UTC")
-p3$summary_end_datime <- lubridate::dmy_hm(p3$summary_end_datime,  tz = "UTC")
-rep3 <- report_period(period = p3 , acti_data = acti_data2)
-#View(rep3)
-# Example 4 mixed summary_type
-# for 'first' summary type only summary_start_datime and the duration will be used.
-acti_data2 <- read_actigraph_csv(x = "C:\\\\1\\\\EXAMPLE_DATA_2")
-p4 <- read.csv(file = paste("C:\\\\1\\\\EXAMPLE_DATA_2\\\\input parameters example period mixed.csv"), sep = ",", header = TRUE, skip = 0, na.strings=c("NA","NaN", " "))
-p4$summary_start_datime <- lubridate::dmy_hm(p4$summary_start_datime,  tz = "UTC")
-p4$summary_end_datime <- lubridate::dmy_hm(p4$summary_end_datime,  tz = "UTC")
-rep4 <- report_period(period = p4 , acti_data = acti_data2)
-#View(rep4)
+library("lubridate")
+par <- data.frame(subject_ID = 1,
+summary_duration_h = 24,
+summary_type = "sequential",
+summary_start_datime = ymd_hms("2017-12-05 00:00:00 UTC"),
+summary_end_datime = ymd_hms("2017-12-15 00:00:00 UTC"))
+data(act)
+report_period(period = par , acti_data = act)
 }
-

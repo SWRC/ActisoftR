@@ -31,4 +31,3 @@ end.period <- rep("2016-07-20", 3)
 mystudy <- portion(acti_data, from = start.period,  to = end.period)
 
 }
-

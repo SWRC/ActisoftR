@@ -4,7 +4,7 @@
 \alias{portion_withoverlaps}
 \title{Slices a data.frame containing date-time type columns including overlaping periods.}
 \usage{
-portion_withoverlaps(x, from, to, ...)
+portion_withoverlaps(x, from, to, tz = "UTC", ...)
 }
 \arguments{
 \item{x}{a dataframe}
@@ -30,4 +30,3 @@ start.period <- rep("2016-07-10 12:00", 3)
 end.period <- rep("2016-07-20 12:00", 3)
 mystudy <- portion_withoverlaps(acti_data, from = start.period,  to = end.period)
 }
-

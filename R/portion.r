@@ -21,7 +21,6 @@ portion <- function(x, from , to , ...){ #all = TRUE,
   int <- NULL
   x <- tbl_df(x)
   part <- length(unique(x$subject_ID))
-  #part <- as.matrix (distinct(x, x$subject_ID) ) #participant
   mat2 <-  NULL
 
   if(length(from) != length(to))
@@ -30,7 +29,6 @@ portion <- function(x, from , to , ...){ #all = TRUE,
   for (i in 1 : length(part)){
     mat <- filter(x, x$subject_ID == part[[i]], x$datime_start >= from[i], x$datime_end <= to[i] )
     mat2 <- rbind(mat2 , mat)
-    #mat2 <- na.omit(mat2)
   }
   mat2
 }
@@ -43,6 +41,7 @@ portion <- function(x, from , to , ...){ #all = TRUE,
 #' @param x a dataframe
 #' @param from a vector of lenght = participants
 #' @param to a vector of lenght = participants
+#' @param tz is the time zone
 #' @param ... Optional parameters
 #'
 #' @return a dataframe
@@ -63,9 +62,7 @@ portion_withoverlaps <- function(x, from , to , tz = "UTC", ...){
   int <- NULL
   x <- tbl_df(x)
   x$int <- lubridate::interval(x$datime_start,x$datime_end)
-#x <- x[!is.na(x$int),]
   part <- as.vector(unique(x$subject_ID))
-  #part <- as.matrix (distinct(x, x$subject_ID) ) #participant
   mat2 <-  NULL
 
   if(length(from) != length(to))
@@ -77,7 +74,7 @@ portion_withoverlaps <- function(x, from , to , tz = "UTC", ...){
     mat <- dplyr::filter(x, x$subject_ID == part[[i]], lubridate::int_overlaps(x$int,int2) %in% c(TRUE, NA) )
     mat <- mat %>% select(-int)
     mat2 <- rbind(mat2 , mat)
-    #mat2 <- na.omit(mat2)
   }
   mat2
 }
+
