@@ -6,11 +6,13 @@
 #'
 #' @examples
 #' library("lubridate")
-#' library("dplyr")
-#' p4 <- read.csv(file = paste("C:\\1\\EXAMPLE_DATA_2\\input parameters example period mixed.csv"), sep = ",", header = TRUE, skip = 0)
-#' p4$summary_start_datime <- lubridate::dmy_hm(p4$summary_start_datime,  tz = "UTC")
-#' p4$summary_end_datime <- lubridate::dmy_hm(p4$summary_end_datime,  tz = "UTC")
-#' d <- deagg(period = p4)
+#' data("act")
+#' par <- data.frame(subject_ID = 1,
+#'                   summary_duration_h = 24,
+#'                   summary_type = "sequential",
+#'                   summary_start_datime = ymd_hms("2017-12-05 00:00:00 UTC"),
+#'                   summary_end_datime = ymd_hms("2017-12-15 00:00:00 UTC"))
+#' deagg(period = par)
 #'
 #' @export
 #' @importFrom dplyr filter mutate bind_rows
@@ -65,4 +67,3 @@ deagg <-  function(period){ #deaggregation
  df$summary_duration_h <- df$summary_duration_h/3600
  df
 }
-
