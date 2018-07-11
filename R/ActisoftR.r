@@ -10,8 +10,8 @@
 #' @importFrom magrittr %>%
 #' @importFrom utils read.csv
 #' @importFrom lubridate hours days
-#' @importFrom grDevices dev.new dev.off windows
 #' @importFrom stats setNames update
 #' @importFrom scales date_breaks date_format
+
 
 
