@@ -1,4 +1,4 @@
-#' Generates reports based on input parameters.
+#' Generates reports based on input periods.
 #'
 #'
 #' @param period a dataframe containing participants and the start and end date/time periods.
@@ -13,18 +13,18 @@
 #' In that case all summary estimates except ‘time in bed’ will be set to NA,
 #' and the column ‘with_excluded_bad’ will show a TRUE. See examples in the Vignettes.
 #' This can be avoided using remove_bad = FALSE.
-#' Sleep efficiency will be 0 when there is an attempt to sleep but no sleep is achieved in the rest/down period.
+#' Sleep efficiency will be zero when there is an attempt to sleep (no sleep achieved in the period) within a rest.
 #' However, the sleep efficiency will be NA when there is not REST or SLEEP with in an interval of time.
 #'
 #' @examples
 #'# Example 1
 #' library("lubridate")
+#' data("act")
 #' par <- data.frame(subject_ID = 1,
 #' summary_duration_h = 24,
 #' summary_type = "sequential",
 #' summary_start_datime = ymd_hms("2017-12-05 00:00:00 UTC"),
 #' summary_end_datime = ymd_hms("2017-12-15 00:00:00 UTC"))
-#' data(act)
 #' report_period(period = par , acti_data = act)
 
 #' @export
@@ -55,7 +55,7 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", ...)
   acti_data$duration <- as.numeric(as.character(acti_data$duration))
   acti_data$sleep_time <- as.numeric(as.character(acti_data$sleep_time))
 
-  acti_data <- tbl_df(filter(acti_data, subject_ID %in% particip, interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM")))
+  acti_data <- tbl_df(dplyr::filter(acti_data, subject_ID %in% particip, interval_type %in% c("REST", "SLEEP", "EXCLUDED", "FORCED SLEEP", "FORCED WAKE", "CUSTOM")))
 
   colName <- c("Actisoft_ID",	"period_number",
                "report_duration_m",	"number_of_rests",	"number_of_sleeps",	"number_of_rests_exact", "number_of_sleeps_exact",	"total_time_in_bed",
@@ -66,12 +66,12 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", ...)
   y <- 1
   for (ii in 1 : length(particip)){
 
-    tab1 <- filter(acti_data, subject_ID == particip[ii])
-    tab2 <- filter(startend, subject_ID == particip[ii])
+    tab1 <- dplyr::filter(acti_data, subject_ID == particip[ii])
+    tab2 <- dplyr::filter(startend, subject_ID == particip[ii])
     tab1_sec <- portion_withoverlaps (tab1, from = as.POSIXct(tab2$summary_start_datime, tz = tz),  to = as.POSIXct(tab2$summary_end_datime, tz = tz))
     tab1_sec <- tab1_sec[!is.na(tab1_sec$datime_start),]
 
-    tab3 <- filter(period, subject_ID == particip[ii])
+    tab3 <- dplyr::filter(period, subject_ID == particip[ii])
 
     for (jj in 1 : nrow(tab3)){
 
@@ -142,7 +142,7 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", ...)
       y <- y +  1
 
       if (remove_bad == TRUE){
-        if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period partially scored as Bad
+        if(sum(mat$bad, na.rm = TRUE) > 0){ # For AMI, removing sleep period is partially scored as Bad
           report$number_of_rests_exact <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <-
           report$longest_sleep_period <- report$shortest_sleep_period <- NA
           report$with_excluded_bad <- TRUE
@@ -161,12 +161,12 @@ report_period <- function(period, acti_data, remove_bad = TRUE, tz = "UTC", ...)
 # when there's a rest period without sleep AND no excluded or bad period, then total_sleep = sleep_efficiency = 0
 if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) > 0){ # if there's at least one sleep
   if(rem == FALSE && all(mat0$actigraph_brand == "Actiware")){
-    if( all(is.na( filter(mat0, interval_type == "SLEEP")$datime_start)) == TRUE){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
+    if( all(is.na( dplyr::filter(mat0, interval_type == "SLEEP")$datime_start)) == TRUE){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$sleep_efficiency <- 0}
 
     }
 #remove_bad == FALSE
   if (sum(mat$bad, na.rm = TRUE) == 0 && all(mat0$actigraph_brand == "AMI")){ # no bad period and actigraph = AMI
-    if(all(filter(mat0, interval_type == "SLEEP")$duration == 0)){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <- report$sleep_efficiency <- 0} }
+    if(all(dplyr::filter(mat0, interval_type == "SLEEP")$duration == 0)){report$shortest_sleep_period <- report$longest_sleep_period <- report$number_of_sleeps <- report$number_of_sleeps_exact <- report$total_sleep <- report$number_of_sleeps <- report$sleep_efficiency <- 0} }
   }
 
 
@@ -194,5 +194,6 @@ if(nrow(dplyr::filter(mat0, interval_type == "SLEEP")) == 0){ # if no sleep or r
 
   report2
 }
+
 
 
