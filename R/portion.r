@@ -8,10 +8,11 @@
 #' @details it does not include overlaps periods: periods that started (ended) before (after) start.period (end.period)
 #'
 #' @examples
-#' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
-#' start.period <- rep("2016-07-10", 3)
-#' end.period <- rep("2016-07-20", 3)
-#' mystudy <- portion(acti_data, from = start.period,  to = end.period)
+#' library("lubridate")
+#' start.period <- ymd_hms("2017-12-10 12:00:00")
+#' end.period <- ymd_hms("2017-12-12 12:00:00")
+#' portion(act[act$subject_ID==1,], from = start.period,  to = end.period)
+#'
 #'
 #' @export
 #' @importFrom lubridate interval int_overlaps
@@ -19,7 +20,7 @@
 #'
 portion <- function(x, from , to , ...){ #all = TRUE,
   int <- NULL
-  x <- tbl_df(x)
+  #x <- data.frame(x)
   part <- length(unique(x$subject_ID))
   mat2 <-  NULL
 
@@ -27,7 +28,7 @@ portion <- function(x, from , to , ...){ #all = TRUE,
     stop("the variables from and to must have same length ")
 
   for (i in 1 : length(part)){
-    mat <- filter(x, x$subject_ID == part[[i]], x$datime_start >= from[i], x$datime_end <= to[i] )
+    mat <- dplyr::filter(x, x$subject_ID == part[[i]], x$datime_start >= from[i], x$datime_end <= to[i] )
     mat2 <- rbind(mat2 , mat)
   }
   mat2
@@ -49,21 +50,22 @@ portion <- function(x, from , to , ...){ #all = TRUE,
 #' @details it does include overlaps periods: periods that started (ended) before (after) start.period (end.period)
 #'
 #' @examples
-#' acti_data <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
-#' start.period <- rep("2016-07-10 12:00", 3)
-#' end.period <- rep("2016-07-20 12:00", 3)
-#' mystudy <- portion_withoverlaps(acti_data, from = start.period,  to = end.period)
+#' library("lubridate")
+#' start.period <- ymd_hms("2017-12-10 12:00:00")
+#' end.period <- ymd_hms("2017-12-12 12:00:00")
+#' portion_withoverlaps(act[act$subject_ID==1,], from = start.period,  to = end.period)
 #' @export
 #' @importFrom lubridate interval int_overlaps
-#' @importFrom dplyr select
+#' @importFrom dplyr filter select
 
 # Slice a data.frame with overlaps
 portion_withoverlaps <- function(x, from , to , tz = "UTC", ...){
   int <- NULL
+  mat2 <-  NULL
   x <- tbl_df(x)
   x$int <- lubridate::interval(x$datime_start,x$datime_end)
   part <- as.vector(unique(x$subject_ID))
-  mat2 <-  NULL
+
 
   if(length(from) != length(to))
     stop("the variables from and to must have same length ")
@@ -71,10 +73,10 @@ portion_withoverlaps <- function(x, from , to , tz = "UTC", ...){
   for (i in 1 : length(part)){
     int2 <- lubridate::interval(from[i], to[i], tz = tz)
 
-    mat <- dplyr::filter(x, x$subject_ID == part[[i]], lubridate::int_overlaps(x$int,int2) %in% c(TRUE, NA) )
-    mat <- mat %>% select(-int)
+    #mat <- dplyr::filter(x, x$subject_ID == part[[i]], lubridate::int_overlaps(x$int,int2) %in% c(TRUE, NA) )
+    mat <- x[ x$subject_ID == part[[i]] & lubridate::int_overlaps(x$int,int2) %in% c(TRUE, NA) ,]
+    mat <- mat %>% dplyr::select(-int)
     mat2 <- rbind(mat2 , mat)
   }
   mat2
 }
-
