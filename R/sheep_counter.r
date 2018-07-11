@@ -10,26 +10,16 @@
 #'
 #' @examples
 #'# Example 1:
-#' dat <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_6")
-#' sheep_counter(dat)
+#' data(act)
+#' # Prob of being sleeping for ID 1 during the baseline sleep
+#' b <- act[act$subject_ID==1 & act$datime_end < as.POSIXct("2017-12-15 00:00:00", tz = "UTC"),]
+#' sheep_counter(b)
+
 #'
-#'# Example 2: using work data (randomly generated)
-#' datime_start <- rep( seq(ISOdatetime(2012,05,12,8,00,00, tz = "UTC"),(ISOdatetime(2012,05,12,8,00,00, tz = "UTC") + lubridate::days(3)), length.out = 4), length(unique(dat$subject_ID)) )
-#' datime_end <- rep( seq(ISOdatetime(2012,05,12,16,00,00, tz = "UTC"),(ISOdatetime(2012,05,12,16,00,00, tz = "UTC") + lubridate::days(3)), length.out = 4), length(unique(dat$subject_ID)) )
-#' df <- data.frame(datime_start = datime_start, datime_end = datime_end, subject_ID = rep(unique(dat$subject_ID),4))
-#' dif1 <- rnorm(nrow(df), 1,1)
-#' dif2 <- rnorm(nrow(df), 1,1)
-#' df$datime_start <- df$datime_start + (3600*dif1)
-#' df$datime_end <- df$datime_end + (3600*dif2)
-#' sheep_counter(dat, work_data = df)
-#'
-#'# Example 3:
-#' dat2 <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA_7")
-#' sheep_counter(dat2)
+
 
 
 #' @export
-#' @importFrom grDevices dev.new dev.off x11 windows
 #' @importFrom dplyr distinct left_join
 #' @importFrom scales date_breaks date_format
 #' @importFrom methods hasArg
@@ -123,12 +113,6 @@ sheep_counter <- function(dat, tz = "UTC", interv = "10 mins", datebreaks = "2 h
 
   }
 
-
-
-  x11()
-  resize.win <- function(Width = 12, Height = 5){dev.off();
-    dev.new(record = TRUE, width = Width, height = Height)}
-  resize.win(8, 6)
 
   p + scale_x_datetime(breaks = date_breaks(datebreaks),
                        minor_breaks = date_breaks(datebreaks),
