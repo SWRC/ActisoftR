@@ -17,7 +17,7 @@ vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-  nocite: @ActisoftR, @rprog, @dplyr, @ggplot2, @lubridate, @plotly, @DT , @RColorBrewer,
+  nocite: @rprog, @dplyr, @ggplot2, @lubridate, @plotly, @DT , @RColorBrewer,
 ---
 
 ```{r setup, include=FALSE}
@@ -34,19 +34,21 @@ It allows studying sleep/wake patterns and identifying disorders in sleep resear
 
 Scored *actigraphy* data generally include:
 
-* multiple activities: rest, sleep, active and excluded periods. 
+* multiple interval types: rest, sleep, active and excluded periods. 
 * date/time start and end recorded for each of the periods. 
 * statistics such as duration and sleep efficiency are also included.
 					
 					
 Motivation and problem:
+* There are various actigraph brands, which come with their own software program for scoring actigraphy data and generating output files containing summary data. Output files from different software programs tend to differ in structure, variables, etc. This can become problematic when combining actigraphy data from different studies in which different actigraphs were used. 
 
-* Often, actigraphy data comes from multiple wristwatches brands and versions. These files tend to differ in formats, variables, etc; which becomes more complex when dealing with large datasets.
-* To best of our knowledge, there are not R functions available for effectively processing and visualizing this sort of dataset.
+* To the best of our knowledge, there are no R functions available for effectively processing and visualizing this sort of combined data.
 
 
-The package consists of several functions for importing, generating reports, summary statistics, and for data visualization.  
-It handles output files from several actigraphs including ActionW (Ambulatory Monitoring, Inc.) and Actiware (Philips Respironics). 
+The package consists of several functions for importing, generating reports, summary statistics, and for data visualization. 
+
+It handles output files in CSV format from several actigraphy software programs, including ActionW (Ambulatory Monitoring, Inc.) and Actiware (Philips Respironics).
+
 
 ```{r, echo = T, warning = F, message=F}
 library("lubridate")
@@ -55,26 +57,6 @@ library("ggplot2")
 library("DT")
 library("plotly")
 library("RColorBrewer")
-
-The package consists of several functions for importing, generating reports, summary statistics, and for data visualization.  
-It handles output files from several actigraphs including ActionW (Ambulatory Monitoring, Inc.) and from Actiware (Philips Respironics). 
-
-```{r, echo = T, warning = F, message=F}
-library("lubridate")
-library("dplyr")
-library("ggplot2")
-```
-				
-```{r, echo = F, warning = F, message = F}
-library("ActisoftR")
-library("DT")
-library("plotly")
-library("RColorBrewer")
-
-load("C:\\1\\ActisoftR\\data\\act.RData")
-
-act$datime_start <- ymd_hms(act$datime_start, tz = "UTC")
-act$datime_end <- ymd_hms(act$datime_end, tz = "UTC" )
 ```
 				
 
@@ -88,26 +70,25 @@ or directly from Github:
 devtools::install_github("SWRC/ActisoftR")
 ```
 
-
-```{r, include=TRUE, echo = T, warning = F, message=F}
+```{r, include=TRUE, echo = T, warning = F, message=F, eval=T}
 library("ActisoftR")
 data("act")
 ```
-
 
 # Importing
 Actigraphy output files are imported using the function ```read_actigraph_csv()```. This only requires specifying the path.
 
 Imported files are merged creating an organic single file.
 If the CSV files have a different number of columns the function will fill missing columns with NAs.
-For example, the folder EXAMPLE_DATA contains Actiware and AMI-type files which will be simultaneously imported. 
+For example, the folder EXAMPLE_DATA contains Actiware and ActionW files which will be simultaneously imported. 
 
-```{r, eval=F}
+```{r, eval = F}
 act <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
 ```
 
 What does imported data look like?
 ```{r, include=TRUE, cache=FALSE, message=FALSE, warning=FALSE}
+data("act")
 datatable(act[order(act$datime_start),] , filter = 'top', width = 800, height = 800)
 ```
 
@@ -116,13 +97,14 @@ The generated file contains the brand of the actigraph, the participant's ID, th
 
 # Plotting
 Plotting actigraphy data allows making visual inference about sleep patterns, circadian rhythm disorders, napping behaviour, trips across multiple time zones, etc.
-Events such as rest episodes with no sleep, naps, jet lag, multiple sleep episodes, can be identified. 
-Differences in sleep patterns between participants are also easily spotted. 
+Events such as rest episodes with no sleep, naps, changes in sleep timing, multiple sleep episodes, can be identified. 
+Differences in sleep patterns between individuals are also easily spotted. 
 
 
 The package provides wide (```plot_Darwent```) and long type of plots (```plot_long```). 
-The Darwent plot displays side-by-side multiple subjects, matching them by default in the left part of the plot. 
-Long plots are suitable for a detailed with-in participants assessment. 
+The Darwent plot displays data horizontally, one row per subject, matching them by default in the left part of the plot. 
+
+Long plots display data from one subject across 24-hour periods, with each subsequent 24-hour period displayed underneath the previous one. The long plots are suitable for a detailed with-in participants assessment. 
 
 Some of the most important plotting arguments are:
 
@@ -176,28 +158,30 @@ knitr::include_graphics("cantsleep.gif")
 
 
 
-Metrics such as sleep efficiency and total sleep across intervals of times are relevant in sleep research.
-*ActisoftR* generates multiple reports based on summary_type (sequential, daily, first, and time_to_time) and user-defined periods. 
+Metrics such as sleep efficiency and total sleep are relevant in sleep research.
+*ActisoftR* generates multiple reports based on summary_type (sequential, daily, first, and time_to_time) and user-defined time periods. 
 Reports allow the computation of several parameters e.g. total sleep time in 24 hours, sleep efficiency, number of sleep episodes, etc.
 
-Often sleeps/rest episodes are split based on the cut-off points. In this case, we use ```00:00``` in UTC.  
-Sleep efficiency and other metrics are then computed for the defined period. The default computation is based on the weighted average.
+Often sleeps/rest episodes are split at the cut-off points for the defined time period. In this example, we use ```00:00``` in UTC.  
+Sleep efficiency and other metrics are then computed for the defined period. The default computation for sleep efficiency is based on the weighted average.
 
-The computed statistics will also depend on excluded periods e.g. when actigraph is removed from the wrist. A detailed set of rules is given in the package documentation. 
+The computed statistics account for any excluded periods e.g. when actigraph is removed from the wrist. A detailed set of rules is given in the package documentation. 
 
 Reports can be generated specifying e.g. periods and ```summary_type```. The possible ```summary_type``` are described below:
 
 Summary_type | Description
 -------------|-----------------------------------------------------------------------------------------------
 ```daily```       | A single ReportPeriod is generated from the given Start_Datime with the given duration.
-```first```       | One ReportPeriod is generated from the given Start_Datime with the given duration. Then, additional ReportPeriods are generated with the same start end times, each day, until the given End_Datime is reached.
+```first```       | One ReportPeriod is generated from the given Start_Datime with the given duration. Then, additional ReportPeriods are generated with the same start
+end times for each subsequent period, until the given End_Datime is reached.
+
 ```sequential```  | ReportPeriods of given duration are generated from the given Start_Datime until the given End_Datime is reached.
 ```time_to_time``` | A single ReportPeriod is generated between the given Start_End_Datimes.
 
 
 
 Let us generate a sequential report of the total sleep time in 24 hours from midnight to midnight *at home* for the first participant. 
-This is generally considered baseline sleep. Home sleep as seen in the above long plot was from ```2017-12-05``` to ```2017-12-15```.
+We will refer to this as *baseline* sleep. Home sleep as seen in the above long plot was from ```2017-12-05``` to ```2017-12-15```.
 
 
 
@@ -223,11 +207,12 @@ datatable(rep)
 
 #Cumulative sleep debt (csd)
 
-Cumulative sleep debt refers to an accumulated deficit regarding the baseline or normal sleep. Baseline sleep is generally computed under common causes of variation e.g. at home under normal conditions.
-A negative *csd* value means that on average the total sleep is smaller than the baseline value. 
+Cumulative sleep debt refers to an accumulated sleep deficit relative to baseline or normal sleep. Baseline sleep is typically computed under common causes of variation e.g.
+at home under normal conditions.
+A negative *csd* value for a particular interval means that less sleep was obtained than the baseline value. 
 
             
-The sleep debt across participants is computed using the ```csd``` function. The main arguments are the total sleep in the period of interest, the participant's baseline and optional a reset rule. This rule refers to the assumption that the sleep deficit resets to zero after a given consecutive number sleeps at night in the physiological time zone with similar or more sleep than baseline. This number is usually assumed to be equal to two.
+The sleep debt across days is computed for each participant using the ```csd``` function. The main arguments are the total sleep in the period of interest, the participant's baseline sleep and optionally, a reset rule. This rule refers to the assumption that the sleep deficit resets to zero after a given consecutive number sleeps at night in the physiological time zone with equal or more sleep than baseline. This number is assumed to be equal to two, based on the limited scientific evidence available.
 
 Argument | Description
 -------------|----------------------------------------------------
@@ -284,21 +269,12 @@ This parameter was negative in the first two days since the total sleep time was
 Notice that this participant required four days to adapt to the new time zone ( ```csd``` returned to zero).
 
 
-
  
 
- 
 
 # Other useful functions        
 
-
 The ```sheep_counter()``` function computes the empirical probability that a group of individuals are sleeping at a given time of the day. It can be seen as the proportion of participants that are sleeping. 
-
-=======
-# Other useful functions        
-
-The ```sheep_counter()``` function computes the empirical probability that a group of individuals are sleeping at a given time of the day. It can be seen as the proportion of participants that are sleeping. 
-
 
 ```{r, eval = F}
 sheep_counter(data, tz = "UTC", interv = "10 mins", datebreaks = "2 hour")
@@ -309,7 +285,7 @@ where ```interv``` is the size of artificial interval times (bins).
 
 # Conclusions
 
-*ActisoftR* is a user-friendly package that handles input data files from different actigraphs. 
+*ActisoftR* is a user-friendly package that handles output data files from different actigraphy software programs.
 
 * Several reports of total sleep time, number of periods of sleep, sleep efficiency, etc. are generated for user-defined intervals.
 
@@ -317,12 +293,12 @@ where ```interv``` is the size of artificial interval times (bins).
 
 * Other utilities include the visualization of large datasets and computation of empirical sleep/work probabilities from a group of participants. 
 
-# Acknowledgement
+# Acknowledgements
 This work was supported by the Sleep/Wake Research Centre. Massey University, New Zealand (www.sleepwake.ac.nz). Thanks to Professor Philippa Gander, Associate Professor Leigh Signal and other members of the Sleep/Wake Research Centre for their suggestions.
 
 We also thank Adam Alexander T. Smith. Adrian Moonen (Eastbourne, New Zealand), is acknowledged for creating an early version of the sheep counter program.
 
-We thank Philips Respironics for kindly allowing the use of Actiware file outputs. 
+We thank Philips Respironics and Ambulatory Monitoring Inc for kindly allowing the use of Actiware and ActionW file outputs.
 
 The opinions and conclusions in this poster are solely those of the authors.
 The R package is licensed under GPL-2.0 and it comes without warranty of any kind.
