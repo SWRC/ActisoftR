@@ -15,7 +15,7 @@
 #'
 #' @examples
 #'# Example 1
-#'library(lubridate)
+#' library(lubridate)
 #' data(act)
 #' act$datime_start <- ymd_hms(act$datime_start)
 #' act$datime_end <- ymd_hms(act$datime_end)
@@ -28,8 +28,10 @@
 #'
 #' rep <- report_period(period = par , acti_data = act)
 #'
-#' start_date <- act[act$subject_ID==1 & act$interval_type == "FLIGHT" & act$comments == "SIN-AMS",]$datime_end
-#' sel <- act[act$datime_start >= start_date & act$datime_end <= start_date + days(10),]
+#' start_date <- act[act$subject_ID==1 & act$interval_type == "FLIGHT" &
+#' act$comments == "SIN-AMS",]$datime_end
+#' sel <- act[act$datime_start >= start_date & act$datime_end <=
+#' start_date + days(10),]
 #'
 #' par_afterflight <- data.frame(subject_ID = 1,
 #' summary_duration_h = 24,
@@ -48,9 +50,9 @@
 #' csd(x = rep_afterflight, baseline_sleep = baseline, reset = 1E5)
 
 #' @export
-#' @importFrom grDevices dev.new dev.off x11
 #' @importFrom dplyr left_join group_by
 #' @importFrom magrittr %>%
+#' @importFrom lubridate ymd_hms
 #' @import ggplot2
 #'
 csd <- function(x, baseline_sleep, reset = 2, plot = TRUE, ylabel, ...){
@@ -104,4 +106,5 @@ csd <- function(x, baseline_sleep, reset = 2, plot = TRUE, ylabel, ...){
  else return(out2)
 
  }
+
 
