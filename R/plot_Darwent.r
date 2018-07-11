@@ -29,7 +29,6 @@
 
 #'
 #' @export
-#' @importFrom grDevices dev.new dev.off x11 windows
 #' @importFrom dplyr distinct left_join arrange summarize
 #' @importFrom scales date_breaks date_format
 #' @importFrom RColorBrewer brewer.pal
@@ -200,7 +199,6 @@ plot_Darwent <- function(x, datebreaks = "12 hour",
 
 
 #' @export
-#' @importFrom grDevices dev.new dev.off x11 windows
 #' @importFrom dplyr distinct
 #' @importFrom scales date_breaks date_format
 #' @importFrom lubridate seconds is.POSIXct floor_date tz ceiling_date
