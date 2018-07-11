@@ -12,8 +12,8 @@
 #' @importFrom utils read.csv write.csv
 #'
 #' @examples
-#' x <- read_actigraph_csv(x = "C:\\1\\EXAMPLE_DATA")
-#' write_actigraph_csv(x, path = "C:\\1\\data_Darwent.csv")
+#' \dontrun{data("act"); write_actigraph_csv(act, path = "C:\\1\\data_Darwent.csv")}
+#'
 #'
 
 write_actigraph_csv <- function(x, path = "~",...){
