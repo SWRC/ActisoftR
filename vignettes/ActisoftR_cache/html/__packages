@@ -1,0 +1,16 @@
+devtools
+lubridate
+bindrcpp
+dplyr
+tidyr
+ActisoftR
+ggplot2
+DT
+plotly
+RColorBrewer
+scales
+tibble
+data.table
+magrittr
+purrr
+usethis
