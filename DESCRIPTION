@@ -5,8 +5,8 @@ Version: 0.1.0
 Date: 2024-09-03
 Depends: R (>= 4.0.0)
 Authors@R: c(person("Edgar", "Santos-Fernandez", role = c("aut", "cre"),
-                      email = "santosfe@qut.edu.au",
-                       comment = c(ORCID = "0000-0001-5962-5417")), person("Lora", "Wu", , "lora.wu@yale.edu", c("aut")),
+                      email = "edgar.santosfdez@gmail.com",
+                      comment = c(ORCID = "0000-0001-5962-5417")), person("Lora", "Wu", , "lora.wu@yale.edu", c("aut")),
     person("Margo", "van den Berg", , "M.J.vandenBerg@massey.ac.nz", c("aut")) )
 Description: 'Actigraphy' is a cost-effective and convenient tool for activity-based monitoring. 'ActisoftR' was designed for parsing 'actigraphy' outputs and to summarise scored data across user-defined intervals. It consists of several functions for importing, generating reports and statistics, and for data visualization.
 URL: https://github.com/SWRC/ActisoftR
